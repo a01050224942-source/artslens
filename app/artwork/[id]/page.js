@@ -1,0 +1,125 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { doc, getDoc, updateDoc } from "firebase/firestore"; // updateDoc 추가됨
+import { db } from "../../../lib/firebase";
+
+export default function ArtworkDetail() {
+  const params = useParams();
+  const router = useRouter();
+  const [art, setArt] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false); // 로딩 상태 관리
+
+  useEffect(() => {
+    const fetchArtworkDetail = async () => {
+      if (!params.id) return;
+      const docRef = doc(db, "artworks", params.id);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        setArt(docSnap.data());
+      }
+      setLoading(false);
+    };
+    fetchArtworkDetail();
+  }, [params.id]);
+
+  // 바로 이 함수가 Gemini를 호출하는 핵심 리모컨입니다!
+  const handleGenerateDocent = async () => {
+    if (!art) return;
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch("/api/docent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: art.title,
+          artist: art.artist,
+          year: art.year,
+          style: art.style,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.story) {
+        // 화면 텍스트 업데이트
+        setArt((prev) => ({ ...prev, docentStory: data.story }));
+
+        // Firebase DB에 해설 저장 (다음에 또 돈 안 들게!)
+        const docRef = doc(db, "artworks", params.id);
+        await updateDoc(docRef, {
+          docentStory: data.story,
+        });
+      }
+    } catch (error) {
+      console.error("Gemini 호출 에러:", error);
+      alert("해설을 생성하지 못했습니다.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품 정보를 불러오는 중입니다...</div>;
+  if (!art) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
+
+  // 기본 문구인지 확인 (이미 해설이 있으면 버튼을 안 보여주기 위해)
+  const isDefaultStory = art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
+
+  return (
+    <main className="min-h-screen bg-gray-900 text-white p-8">
+      <button 
+        onClick={() => router.back()} 
+        className="mb-6 text-gray-400 hover:text-white transition-colors"
+      >
+        ← 갤러리로 돌아가기
+      </button>
+
+      <div className="max-w-6xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        {/* 왼쪽: 이미지 영역 */}
+        <div className="md:w-1/2 bg-black flex items-center justify-center p-8">
+          <img 
+            src={art.imageUrl} 
+            alt={art.title} 
+            className="max-h-[600px] object-contain shadow-2xl"
+          />
+        </div>
+
+        {/* 오른쪽: 정보 및 도슨트 영역 */}
+        <div className="md:w-1/2 p-10 flex flex-col justify-center">
+          <div className="mb-2 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style}</div>
+          <h1 className="text-4xl font-bold mb-4">{art.title}</h1>
+          <p className="text-xl text-gray-400 mb-8 border-b border-gray-700 pb-6">{art.artist}, {art.year}</p>
+          
+          <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+            <h3 className="text-lg font-bold mb-3 flex items-center">
+              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded mr-2">AI 도슨트</span>
+              해설
+            </h3>
+            <p className={`leading-relaxed ${isDefaultStory ? "text-gray-500 italic" : "text-gray-200"}`}>
+              {art.docentStory}
+            </p>
+            
+            {/* 해설이 없을 때만 생성 버튼이 나타납니다 */}
+            {isDefaultStory ? (
+              <button 
+                onClick={handleGenerateDocent}
+                disabled={isGenerating}
+                className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-500 disabled:bg-gray-600 transition-all w-full"
+              >
+                {isGenerating ? "✨ 해설 작성 중..." : "✨ AI 도슨트 해설 듣기"}
+              </button>
+            ) : (
+              <button className="mt-6 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all w-full">
+                🔊 오디오 가이드 재생 (준비중)
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
