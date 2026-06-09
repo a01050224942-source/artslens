@@ -38,12 +38,23 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  // 🎯 무한 루프 인덱싱 적용 (끝나지 않고 계속 회전)
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : artworks.length - 1));
+    setArtworks((prevArtworks) => {
+      const next = [...prevArtworks];
+      const lastItem = next.pop();
+      next.unshift(lastItem);
+      return next;
+    });
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
+    setArtworks((prevArtworks) => {
+      const next = [...prevArtworks];
+      const firstItem = next.shift();
+      next.push(firstItem);
+      return next;
+    });
   };
 
   const scrollToGrid = () => {
@@ -84,8 +95,7 @@ export default function Home() {
 
       const matchedArtwork = artworks.find(art => {
         const targetTitleEn = (art.titleEn || art.title || "").toLowerCase();
-        const resultTitle = (result.title || "").toLowerCase();
-        return targetTitleEn.includes(resultTitle) || resultTitle.includes(targetTitleEn);
+        return targetTitleEn.includes(result.title.toLowerCase());
       });
 
       if (matchedArtwork) {
@@ -102,38 +112,46 @@ export default function Home() {
     }
   };
 
+  // 🎯 무한 3D 배치를 위한 상대적 스타일 계산
   const getCardStyle = (index) => {
-    const offset = index - currentIndex;
-    let adjustedOffset = offset;
-    const halfLength = Math.floor(artworks.length / 2);
-    if (offset > halfLength) adjustedOffset -= artworks.length;
-    if (offset < -halfLength) adjustedOffset += artworks.length;
+    // 배열의 가운데(0번째) 카드를 항상 센터로 고정하고 양옆으로 날개 배치
+    const centerIndex = 0; 
+    let offset = index - centerIndex;
 
-    const absOffset = Math.abs(adjustedOffset);
-    const sign = Math.sign(adjustedOffset);
+    // 카드가 원형으로 돌고 있는 것처럼 보이게 하기 위해 인덱스 절반 보정
+    const half = Math.floor(artworks.length / 2);
+    if (offset > half) offset -= artworks.length;
+    if (offset < -half) offset += artworks.length;
 
+    const absOffset = Math.abs(offset);
+    const sign = Math.sign(offset);
+
+    // 좌우로 2단계 떨어진 카드까지만 화면에 노출 (나머지는 뒤로 숨김)
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
-    const translateX = adjustedOffset * 120; 
-    const translateZ = absOffset * -200; 
-    const rotateY = sign * -45; 
+    const translateX = offset * 115; 
+    const translateZ = absOffset * -180; 
+    const rotateY = sign * -40; 
 
     return {
       transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg)`,
       zIndex: 10 - absOffset,
-      opacity: absOffset === 0 ? 1 : 0.5,
-      filter: absOffset === 0 ? 'none' : 'blur(1px)',
-      transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+      opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.6 : 0.2,
+      filter: absOffset === 0 ? 'none' : 'blur(1.5px)',
+      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
     };
   };
 
   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">미술관 입장 중...</div>;
 
+  // 화면에 그릴 때 현재 중앙 카드의 정보를 하단에 보여주기 위해 타겟팅
+  const centerArtwork = artworks[0] || {};
+
   return (
-    <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth">
+    <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth overflow-x-hidden">
       
-      {/* 🎯 개선된 히어로 섹션: 여백 최소화 및 수직 정렬 최적화 */}
-      <section className="h-[90vh] flex flex-col items-center justify-start relative overflow-hidden border-b border-gray-800 p-8">
+      {/* 히어로 랜딩 섹션 */}
+      <section className="h-[88vh] flex flex-col items-center justify-start relative p-8">
         
         {/* 상단 우측 고정 유저 뱃지 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
@@ -157,14 +175,13 @@ export default function Home() {
           )}
         </div>
 
-        {/* 🎯 수정 포인트 1: 타이틀을 화면 최상단(mt-4)으로 밀착 배치 */}
-        <header className="relative mt-4 text-center z-20 flex flex-col items-center">
+        {/* 타이틀 헤더 */}
+        <header className="relative mt-2 text-center z-20 flex flex-col items-center">
           <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">ArtLens</h1>
           <p className="text-gray-500 text-sm mb-4">시각 지능으로 경험하는 새로운 미학</p>
           
           <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handleImageChange} />
           
-          {/* 🎯 수정 포인트 2: 버튼 마진(mb-2)을 줄여 캐러셀과의 간격을 좁힘 */}
           <button 
             onClick={handleCameraClick}
             disabled={isIdentifying}
@@ -174,25 +191,24 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 🎯 수정 포인트 3: 캐러셀 위치(mt-2)를 버튼 바로 아래로 밀착시켜 황금 비율 완성 */}
+        {/* 🎯 무한 순환 구조로 재탄생한 3D 캐러셀 컨테이너 */}
         <div 
-          className="relative w-[300px] h-[380px] sm:w-[350px] sm:h-[450px] flex items-center justify-center mt-2"
+          className="relative w-[300px] h-[350px] sm:w-[340px] sm:h-[420px] flex items-center justify-center mt-2"
           style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
         >
-          {artworks.slice(0, 15).map((art, index) => {
-            const isCenter = index === currentIndex;
+          {artworks.map((art, index) => {
+            const isCenter = index === 0; // 항상 0번째가 화면 한가운데 배치됨
             return (
               <div 
-                key={art.id}
-                className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden cursor-pointer border border-gray-200"
+                key={`${art.id}-${index}`}
+                className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
                 style={getCardStyle(index)}
-                onClick={() => !isCenter && setCurrentIndex(index)}
               >
                 <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                  <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" />
+                  <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" draggable="false" />
                   <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
-                    <h3 className="text-gray-900 font-bold truncate text-sm">{art.titleEn}</h3>
-                    <p className="text-gray-400 font-serif italic text-xs truncate mt-0.5">{art.artist}</p>
+                    <h3 className="text-gray-900 font-bold truncate text-xs sm:text-sm">{art.titleEn || "Untitled"}</h3>
+                    <p className="text-gray-400 font-serif italic text-[11px] truncate mt-0.5">{art.artist || "Unknown Artist"}</p>
                   </div>
                 </Link>
               </div>
@@ -200,28 +216,32 @@ export default function Home() {
           })}
         </div>
 
-        {/* 🎯 수정 포인트 4: 좌우 버튼과 전체보기 텍스트가 안 겹치도록 마진(mt-8) 조정 */}
-        <div className="flex gap-10 mt-8 z-20">
-          <button onClick={handlePrev} className="hover:scale-110 text-2xl bg-gray-800 border border-gray-700 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer">←</button>
-          <button onClick={handleNext} className="hover:scale-110 text-2xl bg-gray-800 border border-gray-700 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer">→</button>
+        {/* 좌우 무한 컨트롤러 슬라이더 버튼 */}
+        <div className="flex gap-12 mt-6 z-20">
+          <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
+          <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
         </div>
 
+        {/* 전체 컬렉션 스크롤 가이드 버튼 */}
         <button 
           onClick={scrollToGrid}
-          className="mt-6 animate-bounce text-gray-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer"
+          className="mt-6 animate-bounce text-gray-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors"
         >
           전체 컬렉션 보기 ↓
         </button>
       </section>
 
-      {/* 컬렉션 그리드 영역 (기존 유지) */}
+      {/* 🎯 수정 포인트: 화면 왼쪽 끝에서 오른쪽 끝까지 완벽하게 맞는 흰색(연한 회색) 구분선 구현 */}
+      <div className="w-full border-t border-gray-800/80"></div>
+
+      {/* 컬렉션 그리드 영역 */}
       <section ref={gridRef} className="py-20 px-8 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-10 border-b border-gray-800 pb-4">Collection</h2>
+        <h2 className="text-3xl font-bold mb-10 border-b border-gray-800 pb-4 tracking-tight">Collection</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {artworks.map((art) => (
-            <Link href={`/artwork/${art.id}`} key={art.id}>
-              <div className="group bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-indigo-500 transition-all shadow-lg">
-                <div className="h-52 overflow-hidden"><img src={art.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
+            <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`}>
+              <div className="group bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-indigo-500 transition-all shadow-lg hover:shadow-2xl">
+                <div className="h-52 overflow-hidden"><img src={art.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={art.titleEn} /></div>
                 <div className="p-5">
                   <h3 className="font-bold text-white truncate text-base">{art.titleEn}</h3>
                   <p className="text-gray-400 font-serif italic text-xs mt-1 truncate">{art.artist}</p>
