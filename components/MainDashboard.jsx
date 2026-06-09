@@ -182,7 +182,7 @@ export default function Home() {
 
         {/* 메인 타이틀 및 카메라 영역 (전체적으로 여백 확대) */}
         {/* 🎯 레이아웃 최적화 2: 타이틀 영역의 상단 여백(mt-20)을 확대하고, 하단 여백(mb-12)을 미세 조정하여 겹침 방지 */}
-        <header className="relative mt-20 text-center z-20 flex flex-col items-center mb-12">
+        <header className="relative mt-12 text-center z-20 flex flex-col items-center mb-6">
           <h1 className="text-5xl font-extrabold tracking-tighter mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">ArtLens</h1>
           <p className="text-gray-400 mb-6">시각 지능으로 경험하는 새로운 미학</p>
           
@@ -218,7 +218,7 @@ export default function Home() {
 
         {/* 🎯 레이아웃 최적화 3: 3D 캐러셀 바디 영역 전체를 flex 구조 내부에서 mt-10 여백을 주어 타이틀 영역과 완벽하게 분리 */}
         <div 
-          className="relative w-[300px] h-[400px] sm:w-[350px] sm:h-[480px] flex items-center justify-center mt-10 mb-10"
+          className="relative w-[300px] h-[400px] sm:w-[350px] sm:h-[480px] flex items-center justify-center mt-4 mb-4"
           style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
         >
           {artworks.map((art, index) => {
