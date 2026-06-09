@@ -46,7 +46,7 @@ export default function Home() {
     setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
   };
 
-  // 🎯 무한 루프 인덱싱 슬라이더 로직
+  // ◀️ 왼쪽 버튼: 배열을 오른쪽으로 밀기
   const handlePrev = () => {
     setArtworks((prevArtworks) => {
       const next = [...prevArtworks];
@@ -57,6 +57,7 @@ export default function Home() {
     handleOriginalPrev();
   };
 
+  // ▶️ 오른쪽 버튼: 배열을 왼쪽으로 밀기
   const handleNext = () => {
     setArtworks((prevArtworks) => {
       const next = [...prevArtworks];
@@ -65,6 +66,32 @@ export default function Home() {
       return next;
     });
     handleOriginalNext();
+  };
+
+  // 🎯 [핵심 추가 핸들러]: 양옆의 명화 카드를 직접 클릭했을 때 한가운데로 회전시키는 기능
+  const handleCardClick = (index, isCenter) => {
+    if (isCenter) return; // 이미 가운데 있는 카드라면 아무것도 안 함 (Link 태그가 작동하여 상세페이지 진입)
+
+    // 무한 루프 배치에서 인덱스 오프셋을 역산해 줍니다.
+    const centerIndex = 0;
+    let offset = index - centerIndex;
+    const half = Math.floor(artworks.length / 2);
+    if (offset > half) offset -= artworks.length;
+    if (offset < -half) offset += artworks.length;
+
+    if (offset === 1 || offset === 2) {
+      // 내 기준 오른쪽에 서 있는 카드를 눌렀다면? 다음 카드를 소환하는 handleNext를 클릭 횟수만큼 작동
+      const steps = Math.abs(offset);
+      for (let i = 0; i < steps; i++) {
+        handleNext();
+      }
+    } else if (offset === -1 || offset === -2) {
+      // 내 기준 왼쪽에 서 있는 카드를 눌렀다면? handlePrev를 클릭 횟수만큼 작동
+      const steps = Math.abs(offset);
+      for (let i = 0; i < steps; i++) {
+        handlePrev();
+      }
+    }
   };
 
   const scrollToGrid = () => {
@@ -153,10 +180,10 @@ export default function Home() {
   return (
     <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth overflow-x-hidden">
       
-      {/* 🎯 [아키텍처 대교정]: 첫 화면 진입 시 높이를 무조건 브라우저 모니터 화면 전체 크기(h-screen)로 100% 락인 */}
+      {/* SECTION 1: 3D Hero Carousel */}
       <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
-        {/* 우측 상단 최상위 고정 유저 마이페이지 칩 */}
+        {/* 상단 우측 고정 유저 마이페이지 칩 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
             <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl">
@@ -178,7 +205,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* 상단 1: 타이틀 영역 (flex 내부 첫 자식으로 맨 위에 밀착됨) */}
+        {/* 타이틀 헤더 */}
         <header className="relative mt-2 text-center z-20 flex flex-col items-center">
           <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">ArtLens</h1>
           <p className="text-gray-500 text-sm mb-4">시각 지능으로 경험하는 새로운 미학</p>
@@ -194,7 +221,7 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 중간 2: 3D 무한 순환 캐러셀 본체 영역 (화면 중앙에 정렬 배치) */}
+        {/* 3D 무한 캐러셀 본체 영역 */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
             className="relative w-[300px] h-[340px] sm:w-[340px] sm:h-[410px] flex items-center justify-center"
@@ -207,6 +234,8 @@ export default function Home() {
                   key={`${art.id}-${index}`}
                   className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
                   style={getCardStyle(index)}
+                  // 🎯 [교정 반영]: 카드를 터치/클릭했을 때 한가운데 정합성 여부를 판단해 이동 트리거 연동
+                  onClick={() => handleCardClick(index, isCenter)}
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
                     <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" draggable="false" />
@@ -221,7 +250,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 하단 3: 좌우 컨트롤러와 가이드 텍스트 그룹 (flex 바닥으로 밀어내기 정착) */}
+        {/* 하단 제어 컨트롤러 패널 */}
         <div className="w-full flex flex-col items-center z-20">
           <div className="flex gap-12 mb-4">
             <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
@@ -236,11 +265,11 @@ export default function Home() {
           </button>
         </div>
 
-        {/* 🎯 [핵심 패치]: 가은님이 빨간 선으로 그어두신 그 흰색 구분선이 정확히 화면 맨 바닥 테두리에 걸치도록 절대 배치 */}
+        {/* 꽉 찬 바닥 흰색 구분선 */}
         <div className="absolute bottom-0 left-0 w-full border-t border-gray-800/80"></div>
       </section>
 
-      {/* SECTION 2: 아래로 스크롤하면 등장하는 전체 그리드 라이브러리 스페이스 */}
+      {/* SECTION 2: 전체 그리드 영역 */}
       <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold mb-10 border-b border-gray-800 pb-4 tracking-tight">Collection</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
