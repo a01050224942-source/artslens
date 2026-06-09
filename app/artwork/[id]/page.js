@@ -165,10 +165,13 @@ export default function ArtworkDetail() {
         <div className="md:w-1/2 p-10 flex flex-col justify-center">
           <div className="mb-3 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
           
-          {/* 🎯 개선 사항: 한글 작품명 레이어 선행 배치 및 하이브리드 폴백 처리 */}
-          <h1 className="text-4xl font-black mb-1 tracking-tight text-white">
-            {art.titleKo && art.titleKo !== "작품명 번역 중" ? art.titleKo : (art.titleEn || art.title)}
-          </h1>
+{/* 🎯 기존 <h1> 영역을 아래처럼 고쳐보세요 */}
+<h1 className="text-4xl font-black mb-1 tracking-tight text-white">
+  {/* 1순위: 한글제목 -> 2순위: 영어원제 -> 3순위: 그것도 없으면 구형 title 필드 강제 매핑 */}
+  {art.titleKo && art.titleKo !== "작품명 번역 중" 
+    ? art.titleKo 
+    : (art.titleEn || art.title || "제목 미상")}
+</h1>
           
           {/* 🎯 개선 사항: 세련된 서체의 영어 원제목 서브 배치 */}
           <h2 className="text-md italic font-serif text-gray-400 mb-6 tracking-wide">
