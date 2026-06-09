@@ -49,8 +49,8 @@ export default function ArtworkDetail() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titleKo: art.titleKo || "",                  // 🎯 한글 제목 패키징
-          titleEn: art.titleEn || art.title || "",     // 🎯 영어 원제 매핑
+          titleKo: art.titleKo || "",                  // 한글 해설 생성을 위해 백엔드에는 자산 토스
+          titleEn: art.titleEn || art.title || "",     // 원본 영어 원제 매핑
           artist: art.artist || "Unknown Artist",
           year: art.year || "Unknown",
           style: art.style || "European Paintings",
@@ -59,7 +59,7 @@ export default function ArtworkDetail() {
 
       const data = await response.json();
 
-      // 제미나이가 리턴해준 최종 확정 한글 정보들과 오디오 대본을 상태 및 DB에 동시 업데이트
+      // 제미나이가 리턴해준 최종 확정 오디오 대본과 번역 자산을 상태 및 DB에 동시 업데이트
       if (data.story) {
         setArt((prev) => ({ 
           ...prev, 
@@ -88,7 +88,6 @@ export default function ArtworkDetail() {
     if (typeof window === "undefined" || !window.speechSynthesis || !art?.docentStory) return;
     const synth = window.speechSynthesis;
 
-    // 일시정지 상태였다면 이어서 재생
     if (isPaused) {
       synth.resume();
       setIsPaused(false);
@@ -96,14 +95,12 @@ export default function ArtworkDetail() {
       return;
     }
 
-    // 완전히 처음부터 재생할 때는 기존에 나오던 음성을 먼저 취소
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(art.docentStory);
     utterance.lang = "ko-KR"; // 한국어 지원 설정
     utterance.rate = 1.0;     // 말하기 속도 (1.0이 기본)
 
-    // 재생 완료 시 상태 초기화
     utterance.onend = () => {
       setIsSpeaking(false);
       setIsPaused(false);
@@ -139,7 +136,6 @@ export default function ArtworkDetail() {
   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품 정보를 불러오는 중입니다...</div>;
   if (!art) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
-  // 기본 문구이거나 데이터가 유실되었을 때 생성 유도 트리거 작동
   const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
 
   return (
@@ -156,33 +152,30 @@ export default function ArtworkDetail() {
         <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50">
           <img 
             src={art.imageUrl || art.image} 
-            alt={art.titleKo || art.titleEn || art.title} 
+            alt={art.titleEn || art.title} 
             className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 hover:scale-[1.01]"
           />
         </div>
 
-        {/* 오른쪽: 최고급 명화 정보 및 오디오 텍스트 디스플레이 레이아웃 영역 */}
+        {/* 오른쪽: 정보 및 오디오 텍스트 디스플레이 레이아웃 영역 */}
         <div className="md:w-1/2 p-10 flex flex-col justify-center">
           <div className="mb-3 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
           
-{/* 🎯 기존 <h1> 영역을 아래처럼 고쳐보세요 */}
-{/* 🎯 [수정 부분] 한글/영어/구형 스키마/메타데이터 전체를 상호 백업하는 무적의 타이틀 레이아웃 */}
-<h1 className="text-4xl font-black mb-1 tracking-tight text-white">
-  {art.titleKo && art.titleKo !== "작품명 번역 중"
-    ? art.titleKo 
-    : (art.titleEn || art.title || "Untitled Masterpiece")}
-</h1>
-
-<h2 className="text-lg italic font-serif text-gray-400 mb-6 tracking-wide">
-  {/* 만약 titleEn이 잡혔고, 그게 titleKo와 중복되지 않는 정석 영어 제목일 때만 서브 출력 */}
-  {art.titleEn && art.titleKo !== art.titleEn 
-    ? art.titleEn 
-    : (art.title && art.title !== art.titleKo ? art.title : "")}
-</h2>
+          {/* 🎯 수정 완료 1: 메인 화면과 완벽 매칭되도록 1순위 제목을 "영어 원제"로 굳건히 고정 */}
+          <h1 className="text-4xl font-black mb-2 tracking-tight text-white font-sans">
+            {art.titleEn || art.title || "Untitled Masterpiece"}
+          </h1>
           
-          {/* 🎯 개선 사항: 한글 작가명이 있다면 우선 바인딩 */}
-          <p className="text-md text-gray-400 mb-8 border-b border-gray-700 pb-6 font-medium">
-            {art.artistKo || art.artist}, <span className="text-gray-500">{art.year}</span>
+          {/* 🎯 수정 완료 2: 기존 한글 제목은 메인에서 숨기는 대신, 영문 제목 아래에 세련된 서브 캡션 형태로 배치 */}
+          {art.titleKo && art.titleKo !== "작품명 번역 중" && art.titleKo !== art.titleEn && (
+            <h2 className="text-sm font-medium text-indigo-400 mb-6 tracking-wide">
+              국내 한글 통칭: {art.titleKo}
+            </h2>
+          )}
+          
+          {/* 🎯 수정 완료 3: 작가명 역시 메인 화면 톤앤매너와 맞춰 원본 영어 이름으로 일관성 있게 출력 */}
+          <p className="text-md text-gray-400 mb-8 border-b border-gray-700 pb-6 font-medium font-serif italic">
+            {art.artist || "Unknown Artist"}, <span className="text-gray-500 font-sans not-italic">{art.year}</span>
           </p>
           
           <div className="bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-inner">
@@ -194,7 +187,6 @@ export default function ArtworkDetail() {
               {art.docentStory}
             </p>
             
-            {/* 해설이 없을 때만 생성 버튼이 나타납니다 */}
             {isDefaultStory ? (
               <button 
                 onClick={handleGenerateDocent}
@@ -204,14 +196,13 @@ export default function ArtworkDetail() {
                 {isGenerating ? "✨ 제미나이가 예술적 분석을 정밀 수행 중..." : "✨ AI 도슨트 오디오 가이드 생성"}
               </button>
             ) : (
-              /* 🔊 오디오 플레이어 컨트롤러 인터페이스 리액터 영역 */
               <div className="flex flex-col gap-2 mt-6">
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
                     className="bg-white text-black px-8 py-3.5 rounded-full font-bold text-sm tracking-wide hover:bg-gray-100 transition-all w-full shadow-lg flex items-center justify-center gap-2"
                   >
-                    {isPaused ? "▶️ 오디오 가이드 이어듣기" : "🔊 오디오 가이드 재생"}
+                    {isPaused ? "▶️ 도슨트 이어서 청취하기" : "🔊 오디오 가이드 재생"}
                   </button>
                 ) : (
                   <button 
@@ -222,7 +213,6 @@ export default function ArtworkDetail() {
                   </button>
                 )}
 
-                {/* 재생 중이거나 일시정지 상태일 때만 '처음부터 다시 듣기' 버튼 활성화 */}
                 {(isSpeaking || isPaused) && (
                   <button 
                     onClick={handleStopTTS}
