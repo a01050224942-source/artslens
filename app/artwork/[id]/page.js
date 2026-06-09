@@ -1,4 +1,3 @@
-"use comprehension";
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -13,10 +12,9 @@ export default function ArtworkDetail() {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false); // 로딩 상태 관리
 
-  // 🔊 TTS 오디오 관련 상태 및 가상 오디오 플레이어 레프(ref) 추가
+  // 🔊 TTS 오디오 관련 상태 추가
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const audioRef = useRef(null); // 🎯 ElevenLabs mp3 바이너리 버퍼를 핸들링할 코어 주소 저장소
 
   useEffect(() => {
     const fetchArtworkDetail = async () => {
@@ -32,11 +30,11 @@ export default function ArtworkDetail() {
     fetchArtworkDetail();
   }, [params.id]);
 
-  // 🔊 페이지를 이탈할 때 오디오 가이드가 계속 흘러나오는 현상 방지 (메모리 누수 원천 차단)
+  // 🔊 페이지를 이탈할 때 오디오 가이드가 계속 나오는 현상 방지 (메모리 누수 차단)
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
     };
   }, []);
@@ -85,70 +83,67 @@ export default function ArtworkDetail() {
     }
   };
 
-  // 🔊 100% 교정 완료: 구형 기계음을 파괴하고 백엔드 /api/tts 스트림을 받아와 재생하는 함수
-  const handlePlayTTS = async () => {
-    if (!art?.docentStory) return;
+  // 🎯 [교정 완료]: 외부 API 없이 브라우저 내장 Google 프리미엄 한국어 성우를 저격하는 함수
+  const handlePlayTTS = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis || !art?.docentStory) return;
+    const synth = window.speechSynthesis;
 
-    // 일시정지 상태였다면 처음부터 다시 땡겨오지 않고 그 자리에서 이어서 재생 (컨테이너 세이빙)
-    if (isPaused && audioRef.current) {
-      audioRef.current.play();
+    // 일시정지 상태였다면 이어서 재생
+    if (isPaused) {
+      synth.resume();
       setIsPaused(false);
       setIsSpeaking(true);
       return;
     }
 
-    try {
-      setIsSpeaking(true);
-      
-      // 📡 내 Next.js 백엔드 라우터로 제미나이 도슨트 대본을 쏘아 보냅니다.
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: art.docentStory }),
-      });
+    // 완전히 처음부터 재생할 때는 기존에 나오던 음성을 먼저 취소
+    synth.cancel();
 
-      if (!response.ok) throw new Error("ElevenLabs mp3 바이너리 획득 실패");
+    const utterance = new SpeechSynthesisUtterance(art.docentStory);
+    utterance.lang = "ko-KR"; // 한국어 지원 설정
 
-      // 리턴된 순수 mp3 데이터 바이츠를 브라우저 가상 메모리 blob URL로 변환
-      const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob);
+    // 💡 크롬/엣지 브라우저에 내장된 가장 부드러운 구글 한국어 성우 엔진을 매핑합니다.
+    const voices = synth.getVoices();
+    const googleVoice = voices.find(
+      (voice) => voice.lang === "ko-KR" && voice.name.includes("Google")
+    );
 
-      // 기존에 혹시 돌고 있던 플레이어가 있다면 즉시 강제 정지 처리
-      if (audioRef.current) audioRef.current.pause();
-      
-      // HTML5 표준 오디오 인스턴스 생성 후 바인딩
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      // 오디오 스트리밍이 완전히 종료되었을 때 프론트엔드 버튼 컨트롤 상태 초기화
-      audio.onended = () => {
-        setIsSpeaking(false);
-        setIsPaused(false);
-      };
-
-      audio.play();
-
-    } catch (error) {
-      console.error("오디오 가이드 ElevenLabs 연동 실패:", error);
-      alert("인공지능 도슨트 고급 음성을 불러오지 못했습니다. 백엔드 라우터를 점검해 주세요.");
-      setIsSpeaking(false);
+    if (googleVoice) {
+      utterance.voice = googleVoice;
     }
+
+    // 차분하고 신뢰감 있는 미술관 가이드 톤을 위해 속도를 0.95배속으로 미세 튜닝
+    utterance.rate = 0.95; 
+    utterance.pitch = 1.0; 
+
+    // 재생 완료 시 상태 초기화
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+
+    synth.speak(utterance);
+    setIsSpeaking(true);
   };
 
-  // 🔊 TTS: 오디오 일시정지 함수 교정
+  // 🔊 TTS: 오디오 일시정지 함수
   const handlePauseTTS = () => {
-    if (audioRef.current && isSpeaking) {
-      audioRef.current.pause();
+    if (typeof window !== "undefined" && window.speechSynthesis && isSpeaking) {
+      window.speechSynthesis.pause();
       setIsPaused(true);
       setIsSpeaking(false);
     }
   };
 
-  // 🔊 TTS: 오디오 완전 정지 함수 교정
+  // 🔊 TTS: 오디오 완전 정지 함수
   const handleStopTTS = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0; // 오디오 재생 바 포인터를 맨 앞으로 강제 리셋
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
       setIsPaused(false);
     }
@@ -218,14 +213,13 @@ export default function ArtworkDetail() {
                 {isGenerating ? "✨ 제미나이가 예술적 분석을 정밀 수행 중..." : "✨ AI 도슨트 오디오 가이드 생성"}
               </button>
             ) : (
-              /* 🔊 최첨단 하이엔드 AI 성우 오디오 플레이어 컨트롤러 인터페이스 */
               <div className="flex flex-col gap-2 mt-6">
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
                     className="bg-white text-black px-8 py-3.5 rounded-full font-bold text-sm tracking-wide hover:bg-gray-100 transition-all w-full shadow-lg flex items-center justify-center gap-2"
                   >
-                    {isPaused ? "▶️ 도슨트 이어서 청취하기" : "🔊 오디오 가이드 고급 재생"}
+                    {isPaused ? "▶️ 도슨트 이어서 청취하기" : "🔊 오디오 가이드 재생"}
                   </button>
                 ) : (
                   <button 
