@@ -166,17 +166,19 @@ export default function ArtworkDetail() {
           <div className="mb-3 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
           
 {/* 🎯 기존 <h1> 영역을 아래처럼 고쳐보세요 */}
+{/* 🎯 [수정 부분] 한글/영어/구형 스키마/메타데이터 전체를 상호 백업하는 무적의 타이틀 레이아웃 */}
 <h1 className="text-4xl font-black mb-1 tracking-tight text-white">
-  {/* 1순위: 한글제목 -> 2순위: 영어원제 -> 3순위: 그것도 없으면 구형 title 필드 강제 매핑 */}
-  {art.titleKo && art.titleKo !== "작품명 번역 중" 
+  {art.titleKo && art.titleKo !== "작품명 번역 중"
     ? art.titleKo 
-    : (art.titleEn || art.title || "제목 미상")}
+    : (art.titleEn || art.title || "Untitled Masterpiece")}
 </h1>
-          
-          {/* 🎯 개선 사항: 세련된 서체의 영어 원제목 서브 배치 */}
-          <h2 className="text-md italic font-serif text-gray-400 mb-6 tracking-wide">
-            {art.titleEn && art.titleKo !== art.titleEn ? art.titleEn : ""}
-          </h2>
+
+<h2 className="text-lg italic font-serif text-gray-400 mb-6 tracking-wide">
+  {/* 만약 titleEn이 잡혔고, 그게 titleKo와 중복되지 않는 정석 영어 제목일 때만 서브 출력 */}
+  {art.titleEn && art.titleKo !== art.titleEn 
+    ? art.titleEn 
+    : (art.title && art.title !== art.titleKo ? art.title : "")}
+</h2>
           
           {/* 🎯 개선 사항: 한글 작가명이 있다면 우선 바인딩 */}
           <p className="text-md text-gray-400 mb-8 border-b border-gray-700 pb-6 font-medium">
