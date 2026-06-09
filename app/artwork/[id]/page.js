@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc } from "firebase/firestore"; // updateDoc 추가됨
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 export default function ArtworkDetail() {
@@ -11,6 +11,10 @@ export default function ArtworkDetail() {
   const [art, setArt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false); // 로딩 상태 관리
+
+  // 🔊 TTS 오디오 관련 상태 추가
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     const fetchArtworkDetail = async () => {
@@ -25,6 +29,15 @@ export default function ArtworkDetail() {
     };
     fetchArtworkDetail();
   }, [params.id]);
+
+  // 🔊 페이지를 이탈할 때 오디오 가이드가 계속 나오는 현상 방지 (메모리 누수 차단)
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // 바로 이 함수가 Gemini를 호출하는 핵심 리모컨입니다!
   const handleGenerateDocent = async () => {
@@ -60,6 +73,59 @@ export default function ArtworkDetail() {
       alert("해설을 생성하지 못했습니다.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // 🔊 TTS: 오디오 재생 및 이어듣기 함수
+  const handlePlayTTS = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis || !art?.docentStory) return;
+    const synth = window.speechSynthesis;
+
+    // 일시정지 상태였다면 이어서 재생
+    if (isPaused) {
+      synth.resume();
+      setIsPaused(false);
+      setIsSpeaking(true);
+      return;
+    }
+
+    // 완전히 처음부터 재생할 때는 기존에 나오던 음성을 먼저 취소
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(art.docentStory);
+    utterance.lang = "ko-KR"; // 한국어 지원 설정
+    utterance.rate = 1.0;     // 말하기 속도 (1.0이 기본)
+
+    // 재생 완료 시 상태 초기화
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+
+    synth.speak(utterance);
+    setIsSpeaking(true);
+  };
+
+  // 🔊 TTS: 오디오 일시정지 함수
+  const handlePauseTTS = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis && isSpeaking) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+      setIsSpeaking(false);
+    }
+  };
+
+  // 🔊 TTS: 오디오 완전 정지 함수
+  const handleStopTTS = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
     }
   };
 
@@ -110,12 +176,37 @@ export default function ArtworkDetail() {
                 disabled={isGenerating}
                 className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-500 disabled:bg-gray-600 transition-all w-full"
               >
-                {isGenerating ? "✨ 해설 작성 중..." : "✨ AI 도슨트 해설 듣기"}
+                {isGenerating ? "✨ 해설 작성 중..." : "✨ AI 도슨트 해설 생성하기"}
               </button>
             ) : (
-              <button className="mt-6 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all w-full">
-                🔊 오디오 가이드 재생 (준비중)
-              </button>
+              /* 🔊 오디오 플레이어 컨트롤러 영역으로 교체 */
+              <div className="flex flex-col gap-2 mt-6">
+                {!isSpeaking || isPaused ? (
+                  <button 
+                    onClick={handlePlayTTS}
+                    className="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all w-full shadow-md"
+                  >
+                    {isPaused ? "▶️ 오디오 가이드 이어듣기" : "🔊 오디오 가이드 재생"}
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handlePauseTTS}
+                    className="bg-amber-500 text-white px-8 py-3 rounded-full font-bold hover:bg-amber-600 transition-all w-full shadow-md"
+                  >
+                    ⏸️ 오디오 가이드 일시정지
+                  </button>
+                )}
+
+                {/* 재생 중이거나 일시정지 상태일 때만 '처음부터 다시 듣기' 버튼 활성화 */}
+                {(isSpeaking || isPaused) && (
+                  <button 
+                    onClick={handleStopTTS}
+                    className="text-xs text-gray-400 hover:text-rose-400 transition-all underline mt-2 text-center cursor-pointer"
+                  >
+                    ⏹️ 해설 처음부터 다시 듣기 (정지)
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
