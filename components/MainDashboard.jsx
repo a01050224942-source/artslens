@@ -38,7 +38,15 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // 🎯 무한 루프 인덱싱 적용 (끝나지 않고 계속 회전)
+  const handleOriginalPrev = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : artworks.length - 1));
+  };
+
+  const handleOriginalNext = () => {
+    setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
+  };
+
+  // 🎯 무한 루프 인덱싱 슬라이더 로직
   const handlePrev = () => {
     setArtworks((prevArtworks) => {
       const next = [...prevArtworks];
@@ -46,6 +54,7 @@ export default function Home() {
       next.unshift(lastItem);
       return next;
     });
+    handleOriginalPrev();
   };
 
   const handleNext = () => {
@@ -55,6 +64,7 @@ export default function Home() {
       next.push(firstItem);
       return next;
     });
+    handleOriginalNext();
   };
 
   const scrollToGrid = () => {
@@ -112,13 +122,10 @@ export default function Home() {
     }
   };
 
-  // 🎯 무한 3D 배치를 위한 상대적 스타일 계산
   const getCardStyle = (index) => {
-    // 배열의 가운데(0번째) 카드를 항상 센터로 고정하고 양옆으로 날개 배치
     const centerIndex = 0; 
     let offset = index - centerIndex;
 
-    // 카드가 원형으로 돌고 있는 것처럼 보이게 하기 위해 인덱스 절반 보정
     const half = Math.floor(artworks.length / 2);
     if (offset > half) offset -= artworks.length;
     if (offset < -half) offset += artworks.length;
@@ -126,7 +133,6 @@ export default function Home() {
     const absOffset = Math.abs(offset);
     const sign = Math.sign(offset);
 
-    // 좌우로 2단계 떨어진 카드까지만 화면에 노출 (나머지는 뒤로 숨김)
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
     const translateX = offset * 115; 
@@ -144,16 +150,13 @@ export default function Home() {
 
   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">미술관 입장 중...</div>;
 
-  // 화면에 그릴 때 현재 중앙 카드의 정보를 하단에 보여주기 위해 타겟팅
-  const centerArtwork = artworks[0] || {};
-
   return (
     <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth overflow-x-hidden">
       
-      {/* 히어로 랜딩 섹션 */}
-      <section className="h-[88vh] flex flex-col items-center justify-start relative p-8">
+      {/* 🎯 [아키텍처 대교정]: 첫 화면 진입 시 높이를 무조건 브라우저 모니터 화면 전체 크기(h-screen)로 100% 락인 */}
+      <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
-        {/* 상단 우측 고정 유저 뱃지 */}
+        {/* 우측 상단 최상위 고정 유저 마이페이지 칩 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
             <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl">
@@ -175,7 +178,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* 타이틀 헤더 */}
+        {/* 상단 1: 타이틀 영역 (flex 내부 첫 자식으로 맨 위에 밀착됨) */}
         <header className="relative mt-2 text-center z-20 flex flex-col items-center">
           <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">ArtLens</h1>
           <p className="text-gray-500 text-sm mb-4">시각 지능으로 경험하는 새로운 미학</p>
@@ -191,51 +194,54 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 🎯 무한 순환 구조로 재탄생한 3D 캐러셀 컨테이너 */}
-        <div 
-          className="relative w-[300px] h-[350px] sm:w-[340px] sm:h-[420px] flex items-center justify-center mt-2"
-          style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
-        >
-          {artworks.map((art, index) => {
-            const isCenter = index === 0; // 항상 0번째가 화면 한가운데 배치됨
-            return (
-              <div 
-                key={`${art.id}-${index}`}
-                className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
-                style={getCardStyle(index)}
-              >
-                <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                  <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" draggable="false" />
-                  <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
-                    <h3 className="text-gray-900 font-bold truncate text-xs sm:text-sm">{art.titleEn || "Untitled"}</h3>
-                    <p className="text-gray-400 font-serif italic text-[11px] truncate mt-0.5">{art.artist || "Unknown Artist"}</p>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
+        {/* 중간 2: 3D 무한 순환 캐러셀 본체 영역 (화면 중앙에 정렬 배치) */}
+        <div className="flex-grow flex items-center justify-center my-2">
+          <div 
+            className="relative w-[300px] h-[340px] sm:w-[340px] sm:h-[410px] flex items-center justify-center"
+            style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+          >
+            {artworks.map((art, index) => {
+              const isCenter = index === 0;
+              return (
+                <div 
+                  key={`${art.id}-${index}`}
+                  className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
+                  style={getCardStyle(index)}
+                >
+                  <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
+                    <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" draggable="false" />
+                    <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
+                      <h3 className="text-gray-900 font-bold truncate text-xs sm:text-sm">{art.titleEn || "Untitled"}</h3>
+                      <p className="text-gray-400 font-serif italic text-[11px] truncate mt-0.5">{art.artist || "Unknown Artist"}</p>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* 좌우 무한 컨트롤러 슬라이더 버튼 */}
-        <div className="flex gap-12 mt-6 z-20">
-          <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
-          <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
+        {/* 하단 3: 좌우 컨트롤러와 가이드 텍스트 그룹 (flex 바닥으로 밀어내기 정착) */}
+        <div className="w-full flex flex-col items-center z-20">
+          <div className="flex gap-12 mb-4">
+            <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
+            <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
+          </div>
+
+          <button 
+            onClick={scrollToGrid}
+            className="animate-bounce text-gray-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2"
+          >
+            전체 컬렉션 보기 ↓
+          </button>
         </div>
 
-        {/* 전체 컬렉션 스크롤 가이드 버튼 */}
-        <button 
-          onClick={scrollToGrid}
-          className="mt-6 animate-bounce text-gray-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors"
-        >
-          전체 컬렉션 보기 ↓
-        </button>
+        {/* 🎯 [핵심 패치]: 가은님이 빨간 선으로 그어두신 그 흰색 구분선이 정확히 화면 맨 바닥 테두리에 걸치도록 절대 배치 */}
+        <div className="absolute bottom-0 left-0 w-full border-t border-gray-800/80"></div>
       </section>
 
-      {/* 🎯 수정 포인트: 화면 왼쪽 끝에서 오른쪽 끝까지 완벽하게 맞는 흰색(연한 회색) 구분선 구현 */}
-      <div className="w-full border-t border-gray-800/80"></div>
-
-      {/* 컬렉션 그리드 영역 */}
-      <section ref={gridRef} className="py-20 px-8 max-w-7xl mx-auto">
+      {/* SECTION 2: 아래로 스크롤하면 등장하는 전체 그리드 라이브러리 스페이스 */}
+      <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold mb-10 border-b border-gray-800 pb-4 tracking-tight">Collection</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {artworks.map((art) => (
