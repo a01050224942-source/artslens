@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import { GoogleGenerativeAI } from "@google/generative-ai"; // 🎯 require를 import로 교정!
 
-// 가은 님의 진짜 API 키를 넣어주세요 (또는 process.env.NEXT_PUBLIC_GEMINI_API_KEY 사용)
-const YOUR_ACTUAL_API_KEY = "AIzaSyCBBrIT-zyByewmOmhpL9-Xm5kBkM9TolI"; 
+// 아래 process.env 설정을 걸어두면 Vercel에 심어둔 새 키를 안전하게 땡겨옵니다.
+const YOUR_ACTUAL_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyCBBrIT-zyByewmOmhpL9-Xm5kBkM9TolI";
 const genAI = new GoogleGenerativeAI(YOUR_ACTUAL_API_KEY);
 
 export async function POST(request) {
