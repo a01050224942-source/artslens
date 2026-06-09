@@ -1,22 +1,29 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { db, auth } from "../../../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function ArtworkDetail() {
   const params = useParams();
   const router = useRouter();
   const [art, setArt] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false); // 로딩 상태 관리
+  const [isGenerating, setIsGenerating] = useState(false); 
 
-  // 🔊 TTS 오디오 관련 상태 추가
+  // 🔊 TTS 오디오 관련 상태
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
+  // 👤 로그인 유저 및 🔖 북마크 상태 추가
+  const [user, setUser] = useState(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
   useEffect(() => {
+    // 1. 작품 상세 정보 땡겨오기
     const fetchArtworkDetail = async () => {
       if (!params.id) return;
       const docRef = doc(db, "artworks", params.id);
@@ -28,9 +35,28 @@ export default function ArtworkDetail() {
       setLoading(false);
     };
     fetchArtworkDetail();
+
+    // 2. 👤 인증 상태 및 실시간 유저 북마크 장부 매핑 스캔
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser && params.id) {
+        // users 컬렉션에서 내 이메일(또는 uid)로 된 문서 개방
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          // 내가 가진 북마크 배열 내에 현재 작품 ID가 포인팅되어 있는지 검증
+          const bookmarks = userData.bookmarks || [];
+          setIsBookmarked(bookmarks.includes(params.id));
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, [params.id]);
 
-  // 🔊 페이지를 이탈할 때 오디오 가이드가 계속 나오는 현상 방지 (메모리 누수 차단)
+  // 🔊 이탈 시 TTS 취소 안전장치
   useEffect(() => {
     return () => {
       if (typeof window !== "undefined" && window.speechSynthesis) {
@@ -39,7 +65,51 @@ export default function ArtworkDetail() {
     };
   }, []);
 
-  // 🛠️ 제미나이 백엔드 API와 한/영 다국어 스키마 계약을 연동하는 리모컨 함수
+  // 🔖 [핵심 추가]: 북마크 클릭 핸들러 리모컨 함수
+  const handleToggleBookmark = async () => {
+    if (!user) {
+      alert("로그인이 필요한 기능입니다. 로그인 페이지로 이동합니다.");
+      router.push("/login");
+      return;
+    }
+    if (!art || bookmarkLoading) return;
+
+    setBookmarkLoading(true);
+    const userDocRef = doc(db, "users", user.uid);
+
+    try {
+      if (isBookmarked) {
+        // 🗑️ 이미 북마크된 상태라면 내 장부 배열에서 원자 단위 삭제
+        await updateDoc(userDocRef, {
+          bookmarks: arrayRemove(params.id)
+        });
+        setIsBookmarked(false);
+        alert("🔖 북마크가 해제되었습니다.");
+      } else {
+        // ➕ 북마크가 안 된 상태라면 내 장부 배열에 신규 추가 (기존 장부가 없으면 자동으로 문서 생성 병합)
+        await updateDoc(userDocRef, {
+          bookmarks: arrayUnion(params.id)
+        }).catch(async (err) => {
+          // 만약 유저 도큐먼트 자체가 아예 존재하지 않는 신규 유저일 때를 대비한 방어선 폴백
+          if (err.code === "not-found") {
+            const { setDoc } = await import("firebase/firestore");
+            await setDoc(userDocRef, { bookmarks: [params.id] });
+          } else {
+            throw err;
+          }
+        });
+        setIsBookmarked(true);
+        alert("💛 맘에 드는 작품으로 북마크되었습니다! 마이페이지에서 확인 가능합니다.");
+      }
+    } catch (error) {
+      console.error("북마크 연동 오류:", error);
+      alert("북마크 처리 중 에러가 발생했습니다.");
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  // 🛠️ 제미나이 도슨트 대본 생성 라우터 링킹 함수
   const handleGenerateDocent = async () => {
     if (!art) return;
     setIsGenerating(true);
@@ -49,8 +119,8 @@ export default function ArtworkDetail() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titleKo: art.titleKo || "",                  // 한글 해설 생성을 위해 백엔드에는 자산 토스
-          titleEn: art.titleEn || art.title || "",     // 원본 영어 원제 매핑
+          titleKo: art.titleKo || "",
+          titleEn: art.titleEn || art.title || "",
           artist: art.artist || "Unknown Artist",
           year: art.year || "Unknown",
           style: art.style || "European Paintings",
@@ -59,7 +129,6 @@ export default function ArtworkDetail() {
 
       const data = await response.json();
 
-      // 제미나이가 리턴해준 최종 확정 오디오 대본과 번역 자산을 상태 및 DB에 동시 업데이트
       if (data.story) {
         setArt((prev) => ({ 
           ...prev, 
@@ -83,12 +152,11 @@ export default function ArtworkDetail() {
     }
   };
 
-  // 🎯 [교정 완료]: 외부 API 없이 브라우저 내장 Google 프리미엄 한국어 성우를 저격하는 함수
+  // 🔊 TTS: 프리미엄 구글 한국어 성우 재생 로직 보존
   const handlePlayTTS = () => {
     if (typeof window === "undefined" || !window.speechSynthesis || !art?.docentStory) return;
     const synth = window.speechSynthesis;
 
-    // 일시정지 상태였다면 이어서 재생
     if (isPaused) {
       synth.resume();
       setIsPaused(false);
@@ -96,13 +164,11 @@ export default function ArtworkDetail() {
       return;
     }
 
-    // 완전히 처음부터 재생할 때는 기존에 나오던 음성을 먼저 취소
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(art.docentStory);
-    utterance.lang = "ko-KR"; // 한국어 지원 설정
+    utterance.lang = "ko-KR"; 
 
-    // 💡 크롬/엣지 브라우저에 내장된 가장 부드러운 구글 한국어 성우 엔진을 매핑합니다.
     const voices = synth.getVoices();
     const googleVoice = voices.find(
       (voice) => voice.lang === "ko-KR" && voice.name.includes("Google")
@@ -112,11 +178,9 @@ export default function ArtworkDetail() {
       utterance.voice = googleVoice;
     }
 
-    // 차분하고 신뢰감 있는 미술관 가이드 톤을 위해 속도를 0.95배속으로 미세 튜닝
     utterance.rate = 0.95; 
     utterance.pitch = 1.0; 
 
-    // 재생 완료 시 상태 초기화
     utterance.onend = () => {
       setIsSpeaking(false);
       setIsPaused(false);
@@ -131,7 +195,6 @@ export default function ArtworkDetail() {
     setIsSpeaking(true);
   };
 
-  // 🔊 TTS: 오디오 일시정지 함수
   const handlePauseTTS = () => {
     if (typeof window !== "undefined" && window.speechSynthesis && isSpeaking) {
       window.speechSynthesis.pause();
@@ -140,7 +203,6 @@ export default function ArtworkDetail() {
     }
   };
 
-  // 🔊 TTS: 오디오 완전 정지 함수
   const handleStopTTS = () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -165,31 +227,46 @@ export default function ArtworkDetail() {
 
       <div className="max-w-6xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-sm">
         {/* 왼쪽: 고화질 명화 이미지 렌더링 영역 */}
-        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50">
+        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50 relative group">
           <img 
             src={art.imageUrl || art.image} 
             alt={art.titleEn || art.title} 
-            className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 hover:scale-[1.01]"
+            className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
           />
+          
+          {/* 🎯 [인터페이스 이식]: 이미지 좌측 상단에 떠 있는 모던 디자인 북마크 하트 버튼 플로팅 */}
+          <button
+            onClick={handleToggleBookmark}
+            disabled={bookmarkLoading}
+            className="absolute top-12 left-12 p-3.5 bg-gray-900/80 backdrop-blur-md border border-gray-700 rounded-full hover:scale-110 active:scale-95 text-xl shadow-2xl transition-all duration-300"
+          >
+            {isBookmarked ? "💛" : "🤍"}
+          </button>
         </div>
 
-        {/* 오른쪽: 최고급 명화 정보 및 오디오 텍스트 디스플레이 레이아웃 영역 */}
+        {/* 오른쪽: 명화 정보 및 오디오 텍스트 레이아웃 영역 */}
         <div className="md:w-1/2 p-10 flex flex-col justify-center">
-          <div className="mb-3 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
+          {/* 상단 장르 뱃지와 북마크 텍스트 링크 정렬 */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
+            <button 
+              onClick={handleToggleBookmark} 
+              className="text-xs font-semibold text-gray-400 hover:text-white transition-colors underline cursor-pointer"
+            >
+              {isBookmarked ? "🔖 북마크 취소하기" : "🔖 내 컬렉션에 추가"}
+            </button>
+          </div>
           
-          {/* 메인 화면과 완벽 매칭되도록 1순위 제목을 "영어 원제"로 굳건히 고정 */}
           <h1 className="text-4xl font-black mb-2 tracking-tight text-white font-sans">
             {art.titleEn || art.title || "Untitled Masterpiece"}
           </h1>
           
-          {/* 기존 한글 제목은 메인에서 숨기는 대신, 영문 제목 아래에 세련된 서브 캡션 형태로 배치 */}
           {art.titleKo && art.titleKo !== "작품명 번역 중" && art.titleKo !== art.titleEn && (
             <h2 className="text-sm font-medium text-indigo-400 mb-6 tracking-wide">
               국내 한글 통칭: {art.titleKo}
             </h2>
           )}
           
-          {/* 작가명 역시 메인 화면 톤앤매너와 맞춰 원본 영어 이름으로 일관성 있게 출력 */}
           <p className="text-md text-gray-400 mb-8 border-b border-gray-700 pb-6 font-medium font-serif italic">
             {art.artist || "Unknown Artist"}, <span className="text-gray-500 font-sans not-italic">{art.year}</span>
           </p>
@@ -203,7 +280,6 @@ export default function ArtworkDetail() {
               {art.docentStory}
             </p>
             
-            {/* 해설이 없을 때만 생성 버튼이 나타납니다 */}
             {isDefaultStory ? (
               <button 
                 onClick={handleGenerateDocent}
@@ -230,7 +306,6 @@ export default function ArtworkDetail() {
                   </button>
                 )}
 
-                {/* 재생 중이거나 일시정지 상태일 때만 '처음부터 다시 듣기' 버튼 활성화 */}
                 {(isSpeaking || isPaused) && (
                   <button 
                     onClick={handleStopTTS}
