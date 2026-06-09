@@ -17,13 +17,13 @@ export default function ArtworkDetail() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // 👤 로그인 유저 및 🔖 북마크 상태 추가
+  // 👤 로그인 유저 및 🔖 북마크 상태
   const [user, setUser] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
-    // 1. 작품 상세 정보 땡겨오기
+    // 1. 작품 상세 데이터 획득
     const fetchArtworkDetail = async () => {
       if (!params.id) return;
       const docRef = doc(db, "artworks", params.id);
@@ -36,17 +36,15 @@ export default function ArtworkDetail() {
     };
     fetchArtworkDetail();
 
-    // 2. 👤 인증 상태 및 실시간 유저 북마크 장부 매핑 스캔
+    // 2. 실시간 세션 인증 장부 스캔 및 북마크 동기화
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser && params.id) {
-        // users 컬렉션에서 내 이메일(또는 uid)로 된 문서 개방
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
-          // 내가 가진 북마크 배열 내에 현재 작품 ID가 포인팅되어 있는지 검증
           const bookmarks = userData.bookmarks || [];
           setIsBookmarked(bookmarks.includes(params.id));
         }
@@ -56,7 +54,7 @@ export default function ArtworkDetail() {
     return () => unsubscribe();
   }, [params.id]);
 
-  // 🔊 이탈 시 TTS 취소 안전장치
+  // 🔊 이탈 시 오디오 유출 원천 차단
   useEffect(() => {
     return () => {
       if (typeof window !== "undefined" && window.speechSynthesis) {
@@ -65,7 +63,7 @@ export default function ArtworkDetail() {
     };
   }, []);
 
-  // 🔖 [핵심 추가]: 북마크 클릭 핸들러 리모컨 함수
+  // 🔖 북마크 토글 트랜잭션 함수
   const handleToggleBookmark = async () => {
     if (!user) {
       alert("로그인이 필요한 기능입니다. 로그인 페이지로 이동합니다.");
@@ -79,18 +77,15 @@ export default function ArtworkDetail() {
 
     try {
       if (isBookmarked) {
-        // 🗑️ 이미 북마크된 상태라면 내 장부 배열에서 원자 단위 삭제
         await updateDoc(userDocRef, {
           bookmarks: arrayRemove(params.id)
         });
         setIsBookmarked(false);
         alert("🔖 북마크가 해제되었습니다.");
       } else {
-        // ➕ 북마크가 안 된 상태라면 내 장부 배열에 신규 추가 (기존 장부가 없으면 자동으로 문서 생성 병합)
         await updateDoc(userDocRef, {
           bookmarks: arrayUnion(params.id)
         }).catch(async (err) => {
-          // 만약 유저 도큐먼트 자체가 아예 존재하지 않는 신규 유저일 때를 대비한 방어선 폴백
           if (err.code === "not-found") {
             const { setDoc } = await import("firebase/firestore");
             await setDoc(userDocRef, { bookmarks: [params.id] });
@@ -99,7 +94,7 @@ export default function ArtworkDetail() {
           }
         });
         setIsBookmarked(true);
-        alert("💛 맘에 드는 작품으로 북마크되었습니다! 마이페이지에서 확인 가능합니다.");
+        alert("❤️ 맘에 드는 작품으로 북마크되었습니다!");
       }
     } catch (error) {
       console.error("북마크 연동 오류:", error);
@@ -109,7 +104,7 @@ export default function ArtworkDetail() {
     }
   };
 
-  // 🛠️ 제미나이 도슨트 대본 생성 라우터 링킹 함수
+  // 🛠️ 제미나이 도슨트 스크립트 빌더 함수
   const handleGenerateDocent = async () => {
     if (!art) return;
     setIsGenerating(true);
@@ -152,7 +147,7 @@ export default function ArtworkDetail() {
     }
   };
 
-  // 🔊 TTS: 프리미엄 구글 한국어 성우 재생 로직 보존
+  // 🔊 TTS: 프리미엄 내장 구글 보이스 플레이 로직
   const handlePlayTTS = () => {
     if (typeof window === "undefined" || !window.speechSynthesis || !art?.docentStory) return;
     const synth = window.speechSynthesis;
@@ -226,34 +221,34 @@ export default function ArtworkDetail() {
       </button>
 
       <div className="max-w-6xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-sm">
-        {/* 왼쪽: 고화질 명화 이미지 렌더링 영역 */}
-        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50 relative group">
+        
+        {/* 🖼️ 왼쪽: 고화질 명화 이미지 레이아웃 (하트 버튼 폭파 완료 💥) */}
+        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50">
           <img 
             src={art.imageUrl || art.image} 
             alt={art.titleEn || art.title} 
-            className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
+            className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 hover:scale-[1.01]"
           />
-          
-          {/* 🎯 [인터페이스 이식]: 이미지 좌측 상단에 떠 있는 모던 디자인 북마크 하트 버튼 플로팅 */}
-          <button
-            onClick={handleToggleBookmark}
-            disabled={bookmarkLoading}
-            className="absolute top-12 left-12 p-3.5 bg-gray-900/80 backdrop-blur-md border border-gray-700 rounded-full hover:scale-110 active:scale-95 text-xl shadow-2xl transition-all duration-300"
-          >
-            {isBookmarked ? "💛" : "🤍"}
-          </button>
         </div>
 
-        {/* 오른쪽: 명화 정보 및 오디오 텍스트 레이아웃 영역 */}
+        {/* 📝 오른쪽: 미술품 메타데이터 및 도슨트 플레이 스페이스 */}
         <div className="md:w-1/2 p-10 flex flex-col justify-center">
-          {/* 상단 장르 뱃지와 북마크 텍스트 링크 정렬 */}
-          <div className="flex justify-between items-center mb-3">
+          
+          {/* 🎯 [인터페이스 튜닝 완료]: 우측 상단으로 하트와 텍스트 링크 전격 통합 및 다이내믹 UI 스킨 처리 */}
+          <div className="flex justify-between items-center mb-4">
             <div className="text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
-            <button 
-              onClick={handleToggleBookmark} 
-              className="text-xs font-semibold text-gray-400 hover:text-white transition-colors underline cursor-pointer"
+            
+            <button
+              onClick={handleToggleBookmark}
+              disabled={bookmarkLoading}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 active:scale-95 disabled:opacity-50 shadow-md ${
+                isBookmarked 
+                  ? "bg-blue-600/30 text-blue-400 border-blue-500/50 hover:bg-blue-600/50" 
+                  : "bg-gray-700/50 text-gray-300 border-gray-600/50 hover:bg-gray-700 hover:text-white"
+              }`}
             >
-              {isBookmarked ? "🔖 북마크 취소하기" : "🔖 내 컬렉션에 추가"}
+              <span>{isBookmarked ? "❤️" : "🤍"}</span>
+              <span>{isBookmarked ? "북마크 취소하기" : "내 컬렉션에 추가"}</span>
             </button>
           </div>
           
