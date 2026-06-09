@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const YOUR_ACTUAL_API_KEY = "AIzaSyCBBrIT-zyByewmOmhpL9-Xm5kBkM9TolI";
+// 💡 Vercel 환경 변수 보관함에서 안전하게 키를 꺼내오도록 수정합니다!
+const YOUR_ACTUAL_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY; 
 const genAI = new GoogleGenerativeAI(YOUR_ACTUAL_API_KEY);
 
 export async function POST(request) {
