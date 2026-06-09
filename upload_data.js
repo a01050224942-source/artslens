@@ -12,9 +12,9 @@ async function fetchAndUploadArtworks() {
   console.log("메트로폴리탄 API에서 데이터 수집을 시작합니다...");
 
   try {
-    // 1. 고흐 그림(Paintings) ID 검색 (2차 발표용으로 20개만 먼저 가져옵니다)
+    // 1. 고흐 그림(Paintings) ID 검색 
     const searchRes = await axios.get("https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=Vincent van Gogh");
-    const objectIds = searchRes.data.objectIDs.slice(0, 20); 
+    const objectIds = searchRes.data.objectIDs.slice(0, 100); 
     
     let count = 0;
     for (const id of objectIds) {
