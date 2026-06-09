@@ -39,7 +39,7 @@ export default function ArtworkDetail() {
     };
   }, []);
 
-  // 바로 이 함수가 Gemini를 호출하는 핵심 리모컨입니다!
+  // 🛠️ 제미나이 백엔드 API와 한/영 다국어 스키마 계약을 연동하는 리모컨 함수
   const handleGenerateDocent = async () => {
     if (!art) return;
     setIsGenerating(true);
@@ -49,22 +49,29 @@ export default function ArtworkDetail() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: art.title,
-          artist: art.artist,
-          year: art.year,
-          style: art.style,
+          titleKo: art.titleKo || "",                  // 🎯 한글 제목 패키징
+          titleEn: art.titleEn || art.title || "",     // 🎯 영어 원제 매핑
+          artist: art.artist || "Unknown Artist",
+          year: art.year || "Unknown",
+          style: art.style || "European Paintings",
         }),
       });
 
       const data = await response.json();
 
+      // 제미나이가 리턴해준 최종 확정 한글 정보들과 오디오 대본을 상태 및 DB에 동시 업데이트
       if (data.story) {
-        // 화면 텍스트 업데이트
-        setArt((prev) => ({ ...prev, docentStory: data.story }));
+        setArt((prev) => ({ 
+          ...prev, 
+          titleKo: data.titleKo || prev.titleKo,
+          artistKo: data.artistKo || prev.artistKo,
+          docentStory: data.story 
+        }));
 
-        // Firebase DB에 해설 저장 (다음에 또 돈 안 들게!)
         const docRef = doc(db, "artworks", params.id);
         await updateDoc(docRef, {
+          titleKo: data.titleKo || art.titleKo,
+          artistKo: data.artistKo || art.artistKo,
           docentStory: data.story,
         });
       }
@@ -132,40 +139,53 @@ export default function ArtworkDetail() {
   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품 정보를 불러오는 중입니다...</div>;
   if (!art) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
-  // 기본 문구인지 확인 (이미 해설이 있으면 버튼을 안 보여주기 위해)
-  const isDefaultStory = art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
+  // 기본 문구이거나 데이터가 유실되었을 때 생성 유도 트리거 작동
+  const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
 
   return (
     <main className="min-h-screen bg-gray-900 text-white p-8">
       <button 
         onClick={() => router.back()} 
-        className="mb-6 text-gray-400 hover:text-white transition-colors"
+        className="mb-6 text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1"
       >
         ← 갤러리로 돌아가기
       </button>
 
-      <div className="max-w-6xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        {/* 왼쪽: 이미지 영역 */}
-        <div className="md:w-1/2 bg-black flex items-center justify-center p-8">
+      <div className="max-w-6xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-sm">
+        {/* 왼쪽: 고화질 명화 이미지 렌더링 영역 */}
+        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-gray-700/50">
           <img 
-            src={art.imageUrl} 
-            alt={art.title} 
-            className="max-h-[600px] object-contain shadow-2xl"
+            src={art.imageUrl || art.image} 
+            alt={art.titleKo || art.titleEn || art.title} 
+            className="max-h-[550px] object-contain shadow-2xl rounded-lg transition-transform duration-300 hover:scale-[1.01]"
           />
         </div>
 
-        {/* 오른쪽: 정보 및 도슨트 영역 */}
+        {/* 오른쪽: 최고급 명화 정보 및 오디오 텍스트 디스플레이 레이아웃 영역 */}
         <div className="md:w-1/2 p-10 flex flex-col justify-center">
-          <div className="mb-2 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style}</div>
-          <h1 className="text-4xl font-bold mb-4">{art.title}</h1>
-          <p className="text-xl text-gray-400 mb-8 border-b border-gray-700 pb-6">{art.artist}, {art.year}</p>
+          <div className="mb-3 text-xs font-bold text-blue-400 uppercase tracking-widest">{art.style || "European Paintings"}</div>
           
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
-            <h3 className="text-lg font-bold mb-3 flex items-center">
-              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded mr-2">AI 도슨트</span>
-              해설
+          {/* 🎯 개선 사항: 한글 작품명 레이어 선행 배치 및 하이브리드 폴백 처리 */}
+          <h1 className="text-4xl font-black mb-1 tracking-tight text-white">
+            {art.titleKo && art.titleKo !== "작품명 번역 중" ? art.titleKo : (art.titleEn || art.title)}
+          </h1>
+          
+          {/* 🎯 개선 사항: 세련된 서체의 영어 원제목 서브 배치 */}
+          <h2 className="text-md italic font-serif text-gray-400 mb-6 tracking-wide">
+            {art.titleEn && art.titleKo !== art.titleEn ? art.titleEn : ""}
+          </h2>
+          
+          {/* 🎯 개선 사항: 한글 작가명이 있다면 우선 바인딩 */}
+          <p className="text-md text-gray-400 mb-8 border-b border-gray-700 pb-6 font-medium">
+            {art.artistKo || art.artist}, <span className="text-gray-500">{art.year}</span>
+          </p>
+          
+          <div className="bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-inner">
+            <h3 className="text-sm font-black mb-3 flex items-center tracking-wider text-gray-300">
+              <span className="bg-blue-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded mr-2 tracking-normal">AI DOCENT</span>
+              AUDIO GUIDE SCRIPT
             </h3>
-            <p className={`leading-relaxed ${isDefaultStory ? "text-gray-500 italic" : "text-gray-200"}`}>
+            <p className={`leading-relaxed text-sm ${isDefaultStory ? "text-gray-500 italic" : "text-gray-200 font-normal"}`}>
               {art.docentStory}
             </p>
             
@@ -174,24 +194,24 @@ export default function ArtworkDetail() {
               <button 
                 onClick={handleGenerateDocent}
                 disabled={isGenerating}
-                className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-500 disabled:bg-gray-600 transition-all w-full"
+                className="mt-6 bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold text-sm tracking-wide hover:bg-blue-500 disabled:bg-gray-700 transition-all w-full shadow-lg"
               >
-                {isGenerating ? "✨ 해설 작성 중..." : "✨ AI 도슨트 해설 생성하기"}
+                {isGenerating ? "✨ 제미나이가 예술적 분석을 정밀 수행 중..." : "✨ AI 도슨트 오디오 가이드 생성"}
               </button>
             ) : (
-              /* 🔊 오디오 플레이어 컨트롤러 영역으로 교체 */
+              /* 🔊 오디오 플레이어 컨트롤러 인터페이스 리액터 영역 */
               <div className="flex flex-col gap-2 mt-6">
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
-                    className="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-all w-full shadow-md"
+                    className="bg-white text-black px-8 py-3.5 rounded-full font-bold text-sm tracking-wide hover:bg-gray-100 transition-all w-full shadow-lg flex items-center justify-center gap-2"
                   >
                     {isPaused ? "▶️ 오디오 가이드 이어듣기" : "🔊 오디오 가이드 재생"}
                   </button>
                 ) : (
                   <button 
                     onClick={handlePauseTTS}
-                    className="bg-amber-500 text-white px-8 py-3 rounded-full font-bold hover:bg-amber-600 transition-all w-full shadow-md"
+                    className="bg-amber-500 text-white px-8 py-3.5 rounded-full font-bold text-sm tracking-wide hover:bg-amber-600 transition-all w-full shadow-lg"
                   >
                     ⏸️ 오디오 가이드 일시정지
                   </button>
@@ -201,7 +221,7 @@ export default function ArtworkDetail() {
                 {(isSpeaking || isPaused) && (
                   <button 
                     onClick={handleStopTTS}
-                    className="text-xs text-gray-400 hover:text-rose-400 transition-all underline mt-2 text-center cursor-pointer"
+                    className="text-xs text-gray-500 hover:text-rose-400 transition-all underline mt-3 text-center cursor-pointer tracking-tight"
                   >
                     ⏹️ 해설 처음부터 다시 듣기 (정지)
                   </button>
