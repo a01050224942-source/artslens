@@ -1,74 +1,65 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai"; 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// 🎯 [인프라 치트키 1] Vercel 환경 변수가 느리게 땡겨와지는 현상을 방지하기 위해 
-// 여기에 제미나이 진짜 API Key 문자열("AIzaSy...")을 생으로 직접 박아넣어 인프라 혼선을 원천 차단합니다.
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "가은님의_진짜_제미나이_오리지널_API_KEY_문자열";
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-// 🎯 [인프라 치트키 2] Vercel 기본 10초 타임아웃 제한을 깨부수고 에지 노드에서 최고속으로 연산하도록 설정
-export const runtime = "edge"; 
+// 💡 Vercel 환경 변수 보관함에서 안전하게 키를 꺼내오도록 수정합니다!
+const YOUR_ACTUAL_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY; 
+const genAI = new GoogleGenerativeAI(YOUR_ACTUAL_API_KEY);
 
 export async function POST(request) {
   try {
+    // 1. 프론트엔드에서 보낸 폼데이터(이미지 파일) 꺼내기
     const formData = await request.formData();
     const file = formData.get("image");
 
     if (!file) {
-      return NextResponse.json({ error: "이미지 파일이 유실되었습니다." }, { status: 400 });
+      return NextResponse.json({ error: "이미지 파일이 없습니다." }, { status: 400 });
     }
 
-    // 3. 파일 용량이 너무 커서 타임아웃이 나는 것을 방지하기 위해 정밀 Uint8Array 버퍼 변환
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
-    
-    // 이진 데이터를 가볍고 압축된 Base64 청크 문자열로 포맷 변경
-    let binary = "";
-    const len = buffer.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(buffer[i]);
-    }
-    const base64Image = btoa(binary);
+    // 2. Next.js 환경에서 파일을 바이너리 버퍼 및 Base64로 변환
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64Image = buffer.toString("base64");
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+    // 3. 시각 지능(Vision)을 지원하는 Gemini 모델 설정 및 JSON 모드 활성화
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash", 
       generationConfig: { responseMimeType: "application/json" }
     });
 
     const prompt = `
-      당신은 미술 갤러리 '아트렌즈(ArtLens)'의 고전 명화 스캔 전용 AI 분석 엔진입니다.
-      제공된 이미지 데이터를 분석하여 어떤 회화 작품인지 판독해 주세요.
+      당신은 미술품 식별 전문가입니다. 제공된 이미지 속 미술 작품을 분석하여 정확한 영어 제목과 작가명을 맞춰주세요.
+      반드시 아래 제시된 JSON 포맷으로만 답변해야 합니다.
 
-      [판독 가이드라인]
-      1. 분석된 작품의 영어 오리지널 타이틀(정확한 스펠링)을 'title' 필드에 넣으세요.
-      2. 해당 작품을 그린 거장의 영어 이름을 'artist' 필드에 넣으세요.
-      
-      [출력 JSON 포맷 규칙]
+      [출력 JSON 포맷]
       {
-        "title": "The Starry Night",
-        "artist": "Vincent van Gogh"
+        "title": "정확한 영어 작품 제목 (예: The Starry Night)",
+        "artist": "정확한 영어 작가명 (예: Vincent van Gogh)"
       }
     `;
 
-    const imagePart = {
-      inlineData: {
-        data: base64Image,
-        mimeType: file.type
+    // 4. 텍스트 프롬프트와 이미지 데이터를 함께 Gemini에게 전달
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Image,
+          mimeType: file.type
+        }
       }
-    };
+    ]);
 
-    const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
-    const responseText = response.text();
+    const jsonText = response.text();
+    const data = JSON.parse(jsonText);
 
-    const data = JSON.parse(responseText);
+    // 5. 인식된 영어 제목과 작가명을 프론트엔드로 반환
     return NextResponse.json({
-      title: data.title || "Unknown Title",
-      artist: data.artist || "Unknown Artist"
+      title: data.title,
+      artist: data.artist
     }, { status: 200 });
 
   } catch (error) {
-    console.error("❌ 이미지 분석 백엔드 최종 크래시 로그:", error.message);
+    console.error("Image Identification Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
