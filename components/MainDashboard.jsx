@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
+  // 🎯 [모션 복구 핵심]: 데이터 배열을 훼손하지 않고, 인덱스 포인터(숫자)로만 제어하여 CSS Transition을 완전히 살립니다.
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [user, setUser] = useState(null); 
@@ -38,60 +39,22 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  const handleOriginalPrev = () => {
+  // ◀️ 왼쪽 버튼: 숫자를 감소시키되, 0보다 작아지면 맨 끝 배열로 부드럽게 순환
+  const handlePrev = () => {
+    if (artworks.length === 0) return;
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : artworks.length - 1));
   };
 
-  const handleOriginalNext = () => {
+  // ▶️ 오른쪽 버튼: 숫자를 증가시키되, 배열 길이를 넘어서면 다시 0번으로 부드럽게 순환
+  const handleNext = () => {
+    if (artworks.length === 0) return;
     setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
   };
 
-  // ◀️ 왼쪽 버튼: 배열을 오른쪽으로 밀기
-  const handlePrev = () => {
-    setArtworks((prevArtworks) => {
-      const next = [...prevArtworks];
-      const lastItem = next.pop();
-      next.unshift(lastItem);
-      return next;
-    });
-    handleOriginalPrev();
-  };
-
-  // ▶️ 오른쪽 버튼: 배열을 왼쪽으로 밀기
-  const handleNext = () => {
-    setArtworks((prevArtworks) => {
-      const next = [...prevArtworks];
-      const firstItem = next.shift();
-      next.push(firstItem);
-      return next;
-    });
-    handleOriginalNext();
-  };
-
-  // 🎯 [핵심 추가 핸들러]: 양옆의 명화 카드를 직접 클릭했을 때 한가운데로 회전시키는 기능
+  // 🎯 [클릭 이동 완벽 복구]: 양옆 카드를 누르면 중앙과의 거리만큼 인덱스를 조절하여 스르륵 회전 모션 발동
   const handleCardClick = (index, isCenter) => {
-    if (isCenter) return; // 이미 가운데 있는 카드라면 아무것도 안 함 (Link 태그가 작동하여 상세페이지 진입)
-
-    // 무한 루프 배치에서 인덱스 오프셋을 역산해 줍니다.
-    const centerIndex = 0;
-    let offset = index - centerIndex;
-    const half = Math.floor(artworks.length / 2);
-    if (offset > half) offset -= artworks.length;
-    if (offset < -half) offset += artworks.length;
-
-    if (offset === 1 || offset === 2) {
-      // 내 기준 오른쪽에 서 있는 카드를 눌렀다면? 다음 카드를 소환하는 handleNext를 클릭 횟수만큼 작동
-      const steps = Math.abs(offset);
-      for (let i = 0; i < steps; i++) {
-        handleNext();
-      }
-    } else if (offset === -1 || offset === -2) {
-      // 내 기준 왼쪽에 서 있는 카드를 눌렀다면? handlePrev를 클릭 횟수만큼 작동
-      const steps = Math.abs(offset);
-      for (let i = 0; i < steps; i++) {
-        handlePrev();
-      }
-    }
+    if (isCenter) return; // 이미 가운데 있다면 Link 컴포넌트가 작동해 상세페이지로 진입합니다.
+    setCurrentIndex(index);
   };
 
   const scrollToGrid = () => {
@@ -149,17 +112,19 @@ export default function Home() {
     }
   };
 
+  // 🎯 [수학적 모듈러 무한 3D 연산]: 데이터 파괴 없이 링 구조로 앞뒤 카드를 무한 스캔하는 알고리즘
   const getCardStyle = (index) => {
-    const centerIndex = 0; 
-    let offset = index - centerIndex;
+    let offset = index - currentIndex;
+    const halfLength = Math.floor(artworks.length / 2);
 
-    const half = Math.floor(artworks.length / 2);
-    if (offset > half) offset -= artworks.length;
-    if (offset < -half) offset += artworks.length;
+    // 💡 핵심: 원형 서클 궤도를 돌리듯 앞뒤 경계선에서 인덱스를 밀고 당겨 양옆이 절대 비어 보이지 않게 만듭니다.
+    if (offset > halfLength) offset -= artworks.length;
+    if (offset < -halfLength) offset += artworks.length;
 
     const absOffset = Math.abs(offset);
     const sign = Math.sign(offset);
 
+    // 내 시야 좌우로 2단계를 벗어난 카드들은 부드럽게 숨겨서 최적화합니다.
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
     const translateX = offset * 115; 
@@ -171,7 +136,8 @@ export default function Home() {
       zIndex: 10 - absOffset,
       opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.6 : 0.2,
       filter: absOffset === 0 ? 'none' : 'blur(1.5px)',
-      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+      // ✨ 이 cubic-bezier 모션 공식이 가은님이 좋아하시던 그 '스르륵' 감성 모션의 핵심 비밀기지입니다!
+      transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
     };
   };
 
@@ -221,20 +187,20 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 3D 무한 캐러셀 본체 영역 */}
+        {/* 3D 부드러운 무한 캐러셀 스페이스 */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
             className="relative w-[300px] h-[340px] sm:w-[340px] sm:h-[410px] flex items-center justify-center"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
-              const isCenter = index === 0;
+              const isCenter = index === currentIndex;
               return (
                 <div 
                   key={`${art.id}-${index}`}
                   className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
                   style={getCardStyle(index)}
-                  // 🎯 [교정 반영]: 카드를 터치/클릭했을 때 한가운데 정합성 여부를 판단해 이동 트리거 연동
+                  // 🎯 [클릭 이동 핸들러 완벽 복원 연동]
                   onClick={() => handleCardClick(index, isCenter)}
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
@@ -265,7 +231,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* 꽉 찬 바닥 흰색 구분선 */}
+        {/* 완벽 밀착 바닥 흰색 구분선 */}
         <div className="absolute bottom-0 left-0 w-full border-t border-gray-800/80"></div>
       </section>
 
