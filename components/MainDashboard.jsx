@@ -27,7 +27,7 @@ export default function Home() {
         ...doc.data()
       }));
       setArtworks(artList);
-      setLoading(false);
+      loading && setLoading(false);
     };
     fetchArtworks();
 
@@ -97,7 +97,6 @@ export default function Home() {
       });
 
       if (matchedArtwork) {
-        // 내부 알림창 등 명세는 원본 영어 제목으로 일관성 있게 매핑
         const displayTitle = matchedArtwork.titleEn || matchedArtwork.title || "Untitled";
         alert(`🎨 작품이 인식되었습니다!\n제목: ${displayTitle}\n상세 페이지로 이동합니다.`);
         router.push(`/artwork/${matchedArtwork.id}`);
@@ -153,17 +152,28 @@ export default function Home() {
       {/* SECTION 1: 3D Hero Carousel */}
       <section className="h-screen flex flex-col items-center justify-center relative overflow-hidden border-b border-gray-800">
         
-        {/* 우측 상단 최상위 고정 로그인 뱃지 */}
+        {/* 🎯 [인터페이스 전격 교정]: 우측 상단 고정 로그인 뱃지에 마이페이지 순간이동 라우팅 탑재 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
-            <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl">
-              <span className="text-indigo-400 font-semibold">{user.email?.split("@")[0]}님</span>
+            <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl transition-all">
+              {/* 내 아이디 영역을 호버/클릭 가능한 버튼으로 빌트인 고도화 */}
+              <button 
+                onClick={() => router.push("/mypage")}
+                className="text-blue-400 font-extrabold hover:text-blue-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                title="나만의 명화 컬렉션 보관함 가기"
+              >
+                <span>👤</span>
+                <span className="underline decoration-dashed decoration-blue-500 underline-offset-4">
+                  {user.email?.split("@")[0]}
+                </span>
+                <span className="text-gray-400 font-normal text-[11px]"> 님</span>
+              </button>
               <span className="text-gray-700">|</span>
-              <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors">로그아웃</button>
+              <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors cursor-pointer">로그아웃</button>
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-5 py-2.5 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-indigo-600 hover:to-purple-600 text-white rounded-full border border-gray-700 transition-all duration-300 shadow-2xl font-bold tracking-wide">
+              <button className="px-5 py-2.5 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-indigo-600 hover:to-purple-600 text-white rounded-full border border-gray-700 transition-all duration-300 shadow-2xl font-bold tracking-wide cursor-pointer">
                 로그인 / 회원가입
               </button>
             </Link>
@@ -186,7 +196,7 @@ export default function Home() {
           <button 
             onClick={handleCameraClick}
             disabled={isIdentifying}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm rounded-full shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm rounded-full shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
           >
             {isIdentifying ? (
               <>
@@ -222,7 +232,6 @@ export default function Home() {
                 <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
                   <img src={art.imageUrl} alt={art.titleEn || art.title} className="w-full h-3/4 object-cover" />
                   
-                  {/* 🎯 수정 완료 1: 3D 캐러셀 카드 하단 타이틀 - 오직 정갈한 영어 전용 레이아웃 매핑 */}
                   <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
                     <h3 className="text-gray-900 font-bold truncate text-sm tracking-tight font-sans">
                       {art.titleEn || art.title || "Untitled"}
@@ -245,7 +254,7 @@ export default function Home() {
 
         <button 
           onClick={scrollToGrid}
-          className="absolute bottom-6 animate-bounce text-gray-500 text-xs flex flex-col items-center tracking-wider"
+          className="absolute bottom-6 animate-bounce text-gray-500 text-xs flex flex-col items-center tracking-wider cursor-pointer"
         >
           전체 컬렉션 보기
           <span className="mt-1 text-sm">↓</span>
@@ -274,7 +283,6 @@ export default function Home() {
                   />
                 </div>
                 
-                {/* 🎯 수정 완료 2: 하단 전체 컬렉션 그리드 카드 타이틀 - 영문 폰트 앤 매너 100% 통일 */}
                 <div className="p-5">
                   <h3 className="font-extrabold text-white truncate text-base tracking-tight font-sans">
                     {art.titleEn || art.title || "Untitled"}
