@@ -11,7 +11,7 @@ export async function POST(request) {
     
     // 아까 성공했던 주소 그대로 사용하되, JSON 형태로만 응답하도록 설정(responseMimeType)을 추가합니다.
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash"
+      model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
 
