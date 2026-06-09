@@ -83,7 +83,6 @@ export default function Home() {
       const result = await response.json();
       console.log("Gemini 인식 결과:", result);
 
-      // 🎯 개선 사항: 제미나이가 인식한 한글/영어 타이틀 텍스트를 고도화된 분화 스키마 전체와 안전하게 크로스체크 매칭
       const matchedArtwork = artworks.find(art => {
         const targetTitleEn = (art.titleEn || art.title || "").toLowerCase();
         const targetTitleKo = (art.titleKo || "").toLowerCase();
@@ -98,10 +97,8 @@ export default function Home() {
       });
 
       if (matchedArtwork) {
-        const displayTitle = matchedArtwork.titleKo && matchedArtwork.titleKo !== "작품명 번역 중" 
-          ? matchedArtwork.titleKo 
-          : matchedArtwork.titleEn;
-          
+        // 내부 알림창 등 명세는 원본 영어 제목으로 일관성 있게 매핑
+        const displayTitle = matchedArtwork.titleEn || matchedArtwork.title || "Untitled";
         alert(`🎨 작품이 인식되었습니다!\n제목: ${displayTitle}\n상세 페이지로 이동합니다.`);
         router.push(`/artwork/${matchedArtwork.id}`);
       } else {
@@ -223,18 +220,15 @@ export default function Home() {
                 onClick={() => !isCenter && setCurrentIndex(index)}
               >
                 <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                  <img src={art.imageUrl} alt={art.titleKo || art.titleEn || art.title} className="w-full h-3/4 object-cover" />
+                  <img src={art.imageUrl} alt={art.titleEn || art.title} className="w-full h-3/4 object-cover" />
                   
-                  {/* 🎯 개선 사항 1: 3D 캐러셀 카드 하단 타이틀 4중 폴백 및 디자인 분화 고도화 */}
+                  {/* 🎯 수정 완료 1: 3D 캐러셀 카드 하단 타이틀 - 오직 정갈한 영어 전용 레이아웃 매핑 */}
                   <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
-                    <h3 className="text-gray-900 font-black truncate text-sm tracking-tight">
-                      {art.titleKo && art.titleKo !== "작품명 번역 중" ? art.titleKo : (art.titleEn || art.title || "Untitled")}
+                    <h3 className="text-gray-900 font-bold truncate text-sm tracking-tight font-sans">
+                      {art.titleEn || art.title || "Untitled"}
                     </h3>
-                    <p className="text-gray-500 font-medium text-xs truncate mt-0.5">
-                      {art.artistKo || art.artist || "Unknown Artist"} 
-                      {art.titleEn && art.titleKo !== art.titleEn && (
-                        <span className="text-[10px] text-gray-400 font-serif italic ml-1.5">({art.titleEn})</span>
-                      )}
+                    <p className="text-gray-400 font-medium font-serif italic text-xs truncate mt-0.5">
+                      {art.artist || "Unknown Artist"}
                     </p>
                   </div>
 
@@ -275,21 +269,18 @@ export default function Home() {
                 <div className="h-56 overflow-hidden relative">
                   <img 
                     src={art.imageUrl} 
-                    alt={art.titleKo || art.titleEn || art.title} 
+                    alt={art.titleEn || art.title} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 
-                {/* 🎯 개선 사항 2: 하단 전체 컬렉션 그리드 카드 타이틀 4중 폴백 및 정밀 디자인 이식 */}
+                {/* 🎯 수정 완료 2: 하단 전체 컬렉션 그리드 카드 타이틀 - 영문 폰트 앤 매너 100% 통일 */}
                 <div className="p-5">
-                  <h3 className="font-black text-white truncate text-base tracking-tight">
-                    {art.titleKo && art.titleKo !== "작품명 번역 중" ? art.titleKo : (art.titleEn || art.title || "Untitled")}
+                  <h3 className="font-extrabold text-white truncate text-base tracking-tight font-sans">
+                    {art.titleEn || art.title || "Untitled"}
                   </h3>
-                  <p className="text-gray-400 font-medium text-sm mt-1 truncate">
-                    {art.artistKo || art.artist || "Unknown Artist"}
-                    {art.titleEn && art.titleKo !== art.titleEn && (
-                      <span className="text-xs text-gray-500 font-serif italic ml-1.5 block lg:inline-block">({art.titleEn})</span>
-                    )}
+                  <p className="text-gray-400 font-medium font-serif italic text-sm mt-1 truncate">
+                    {art.artist || "Unknown Artist"}
                   </p>
                   
                   <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
