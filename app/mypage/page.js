@@ -67,9 +67,12 @@ export default function MyPage() {
       <div className="max-w-7xl mx-auto flex justify-between items-end mb-12 border-b border-gray-800 pb-8">
         <div>
           <h1 className="text-4xl font-black tracking-tighter mb-2">My Masterpiece Collection</h1>
-          <p className="text-gray-400 font-medium">
-            <span className="text-blue-400">{user?.displayName || "가은"}</span> 님이 선별한 {bookmarkedArtworks.length}점의 마스터피스
-          </p>
+<p className="text-gray-400 font-medium">
+  <span className="text-blue-400">
+    {user?.displayName || user?.email?.split("@")[0] || "User"}
+  </span>{" "}
+  님이 선별한 {bookmarkedArtworks.length}점의 마스터피스
+</p>
         </div>
         <div className="flex gap-4">
           <button onClick={() => router.push("/")} className="px-5 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm font-bold transition-all">🏠 갤러리 홈</button>

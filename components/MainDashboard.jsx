@@ -150,16 +150,16 @@ export default function Home() {
     <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth">
       
       {/* SECTION 1: 3D Hero Carousel */}
-      <section className="h-screen flex flex-col items-center justify-center relative overflow-hidden border-b border-gray-800">
+      {/* 🎯 레이아웃 최적화 1: 겹침 현상을 막기 위해 히어로 섹션 높이를 h-screen 대신 flex-col 구조로 변경 */}
+      <section className="min-h-screen flex flex-col items-center justify-start relative overflow-hidden border-b border-gray-800 p-8">
         
-        {/* 🎯 [인터페이스 전격 교정]: 우측 상단 고정 로그인 뱃지에 마이페이지 순간이동 라우팅 탑재 */}
+        {/* 우측 상단 최상위 고정 로그인 뱃지 (마이페이지 라우팅 통합 상태 유지) */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
-            <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl transition-all">
-              {/* 내 아이디 영역을 호버/클릭 가능한 버튼으로 빌트인 고도화 */}
+            <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl">
               <button 
                 onClick={() => router.push("/mypage")}
-                className="text-blue-400 font-extrabold hover:text-blue-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                className="text-indigo-400 font-extrabold hover:text-indigo-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
                 title="나만의 명화 컬렉션 보관함 가기"
               >
                 <span>👤</span>
@@ -180,8 +180,9 @@ export default function Home() {
           )}
         </div>
 
-        {/* 메인 타이틀 및 카메라 영역 */}
-        <header className="absolute top-10 text-center z-20 flex flex-col items-center">
+        {/* 메인 타이틀 및 카메라 영역 (전체적으로 여백 확대) */}
+        {/* 🎯 레이아웃 최적화 2: 타이틀 영역의 상단 여백(mt-20)을 확대하고, 하단 여백(mb-12)을 미세 조정하여 겹침 방지 */}
+        <header className="relative mt-20 text-center z-20 flex flex-col items-center mb-12">
           <h1 className="text-5xl font-extrabold tracking-tighter mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">ArtLens</h1>
           <p className="text-gray-400 mb-6">시각 지능으로 경험하는 새로운 미학</p>
           
@@ -215,9 +216,9 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 3D 캐러셀 바디 */}
+        {/* 🎯 레이아웃 최적화 3: 3D 캐러셀 바디 영역 전체를 flex 구조 내부에서 mt-10 여백을 주어 타이틀 영역과 완벽하게 분리 */}
         <div 
-          className="relative w-[300px] h-[400px] sm:w-[350px] sm:h-[480px] flex items-center justify-center"
+          className="relative w-[300px] h-[400px] sm:w-[350px] sm:h-[480px] flex items-center justify-center mt-10 mb-10"
           style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
         >
           {artworks.map((art, index) => {
