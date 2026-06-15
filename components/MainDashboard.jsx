@@ -138,7 +138,7 @@ export default function Home() {
   return (
     <div className="bg-[#242629] min-h-screen text-white font-sans scroll-smooth overflow-x-hidden relative">
       
-      {/* 원뿔형 프리미엄 스포트라이트 조명 */}
+      {/* 프리미엄 광폭 원뿔형 스포트라이트 */}
       <div 
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[850px] h-[650px] pointer-events-none z-10 opacity-95"
         style={{
@@ -147,10 +147,10 @@ export default function Home() {
         }}
       ></div>
 
-      {/* SECTION 1: 3D Hero Carousel */}
+      {/* SECTION 1: 3D Hero Carousel (원본 비율 보존형) */}
       <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
-        {/* 상단 우측 고정 내비게이션 칩 */}
+        {/* 상단 우측 내비게이션 콘솔 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
             <div className="flex items-center gap-3 bg-[#1a1b1d]/90 backdrop-blur-md px-4 py-2 rounded-full border border-neutral-700 shadow-2xl">
@@ -192,9 +192,8 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 3D 무한 캐러셀 공간 */}
+        {/* 3D 가변 비율 액자 캐러셀 */}
         <div className="flex-grow flex items-center justify-center my-2">
-          {/* 가변 높이를 유연하게 담아내기 위해 컨테이너의 고정 크기 제한 해제 */}
           <div 
             className="relative w-[310px] sm:w-[350px] flex items-center justify-center"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
@@ -204,8 +203,6 @@ export default function Home() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  // 🎯 [패치 포인트 1]: h-full 강제 지정을 걷어내고 h-fit(콘텐츠 맞춤형) 설정으로 변경하여
-                  // 개별 명화의 고유 종횡비에 맞춰 액자 전체의 세로 길이가 가변적으로 반응하도록 교정
                   className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none transition-all duration-500 ${
                     isCenter 
                       ? "border-[14px] border-double shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.7)]" 
@@ -218,14 +215,9 @@ export default function Home() {
                   onClick={() => handleCardClick(index, isCenter)}
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                    
-                    {/* 🎯 [패치 포인트 2]: 고정 비율을 없애고 w-full h-auto object-contain을 주어 
-                        작품이 잘림 없이 100% 온전한 구도로 노출되며, 액자가 그 이미지 테두리에 찰떡처럼 밀착함 */}
                     <div className="w-full h-auto bg-black border-b-2 border-[#2b2110]">
                       <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto object-contain block" draggable="false" />
                     </div>
-
-                    {/* 하단 월넛 목재 라벨 명찰 */}
                     <div 
                       className="w-full p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
                       style={{ background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" }}
@@ -238,7 +230,6 @@ export default function Home() {
                         by {art.artist || "Unknown Artist"}
                       </p>
                     </div>
-
                   </Link>
                 </div>
               );
@@ -246,13 +237,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 하단 제어 화살표 콘솔 */}
+        {/* 하단 제어 화살표 */}
         <div className="w-full flex flex-col items-center z-20">
           <div className="flex gap-12 mb-4">
             <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
             <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
           </div>
-
           <button 
             onClick={scrollToGrid}
             className="animate-bounce text-neutral-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2 font-medium"
@@ -260,18 +250,18 @@ export default function Home() {
             전체 컬렉션 보기 ↓
           </button>
         </div>
-
         <div className="absolute bottom-0 left-0 w-full border-t border-[#1a1b1d]"></div>
       </section>
 
-      {/* SECTION 2: 하단 컬렉션 그리드 구역 */}
+      {/* 🎯 [대교정 포인트]: 하단 전체 작품 목록을 'Masonry(메이슨리)' 레이아웃으로 변경 */}
+      {/* columns-1 sm:columns-2 lg:columns-3 xl:columns-4 속성을 사용하여 빈 공간 없이 촘촘하게 쌓이게 함 */}
       <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto relative z-20">
         <h2 className="text-3xl font-bold mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 items-start">
+        
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-8 space-y-8">
           {artworks.map((art) => (
-            <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`}>
-              {/* 🎯 [패치 포인트 3]: 하단 컬렉션 그리드 리스트도 일정한 바둑판 락을 깨트리고, 
-                  각 명화 고유의 실제 크기에 따라 액자 높낮이가 리얼하게 리사이징되도록 연동 */}
+            <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`} className="block break-inside-avoid">
+              {/* 각 카드가 컬럼 안에서 쪼개지지 않도록 break-inside-avoid 적용 */}
               <div 
                 className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 duration-300 w-full h-auto"
                 style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}
