@@ -178,7 +178,7 @@ export default function Login() {
 
         <div className="text-center mt-6">
           <Link href="/register" className="text-[11px] text-neutral-500 hover:text-white underline underline-offset-4 transition-colors font-medium">
-            처음 오셨나요? ArtLens 무료 가입하기
+            처음 오셨나요? ArtLens 가입하기
           </Link>
         </div>
 
