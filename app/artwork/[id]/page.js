@@ -200,112 +200,133 @@ export default function ArtworkDetail() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white">작품 정보를 불러오는 중입니다...</div>;
+  if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white font-medium">작품 정보를 불러오는 중입니다...</div>;
   if (!art) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
   const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
 
   return (
-    // 🎯 [개편 1]: 메인 화면과 100% 일치시킨 오프라인 고급 전시실 그레이(#242629) 배경 매핑
-    <main className="min-h-screen bg-[#242629] text-white p-8 relative">
+    <main className="min-h-screen bg-[#242629] text-white p-8 relative flex flex-col items-center justify-center overflow-x-hidden">
       
-      {/* 은은한 상단 엠비언트 스포트라이트 조명 레이어 */}
+      {/* 🎯 [디자인 변경 1]: 위는 좁고 아래는 넓게 떨어지는 리얼 원뿔형 갤러리 스포트라이트 조명 구현 */}
       <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none z-0"
+        className="absolute top-0 left-1/4 sm:left-1/3 w-[350px] sm:w-[450px] h-[650px] pointer-events-none z-0 opacity-80"
         style={{
-          background: "radial-gradient(circle at top center, rgba(255, 254, 240, 0.12) 0%, transparent 70%)"
+          background: "polygon(50% 0%, 0% 100%, 100% 100%)",
+          backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 230, 0.18) 0%, rgba(255, 253, 230, 0.04) 60%, transparent 100%)",
+          clipPath: "polygon(40% 0, 60% 0, 100% 100%, 0 100%)"
         }}
       ></div>
 
-      <button 
-        onClick={() => router.back()} 
-        className="mb-6 text-neutral-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1 relative z-10 cursor-pointer"
-      >
-        ← 갤러리로 돌아가기
-      </button>
+      <div className="w-full max-w-6xl flex justify-start mb-4 relative z-10">
+        <button 
+          onClick={() => router.back()} 
+          className="text-neutral-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1 cursor-pointer"
+        >
+          ← 갤러리로 돌아가기
+        </button>
+      </div>
 
-      {/* 🎯 [개편 2]: 컨테이너 배경을 묵직한 전시실 다크 차콜(#1a1b1d)로 변경하여 고급스러운 명도 대비 구축 */}
-      <div className="max-w-6xl mx-auto bg-[#1a1b1d] border border-neutral-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row backdrop-blur-sm relative z-10">
+      {/* 메인 컴포넌트 프레임 레이아웃 */}
+      <div className="w-full max-w-6xl flex flex-col md:flex-row items-stretch justify-center gap-12 relative z-10">
         
-        {/* 왼쪽 명화 이미지 쇼케이스 영역 */}
-        <div className="md:w-1/2 bg-black flex items-center justify-center p-8 border-r border-neutral-800">
-          <img 
-            src={art.imageUrl || art.image} 
-            alt={art.titleEn || art.title} 
-            className="max-h-[520px] object-contain shadow-2xl rounded-sm border-4 border-[#2a2b2d]"
-          />
+        {/* 🖼️ 왼쪽: 명화 전용 진열대 (검은색 배경창 완벽 파괴 💥 및 메인 화면 연동 앤틱 골드 액자 조립) */}
+        <div className="md:w-1/2 flex items-center justify-center p-2 relative">
+          <div 
+            className="bg-[#1a1b1d] rounded-sm overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.8),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300"
+            style={{
+              borderImage: "linear-gradient(to bottom right, #dfba73 0%, #c5a059 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
+              borderWidth: "14px",
+              borderStyle: "solid",
+              borderRadius: "4px"
+            }}
+          >
+            <img 
+              src={art.imageUrl || art.image} 
+              alt={art.titleEn || art.title} 
+              className="max-h-[550px] w-full object-contain"
+              draggable="false"
+            />
+          </div>
         </div>
 
-        {/* 오른쪽 텍스트 정보 및 제미나이 컨트롤 스페이스 */}
-        <div className="md:w-1/2 p-10 flex flex-col justify-center bg-[#1e1f22]">
+        {/* 📄 오른쪽: 미술관 정품 화이트 설명 보드 스페이스 (`unnamed.jpg` 대댓글 레이아웃 미학 반영) */}
+        <div className="md:w-1/2 bg-[#fdfcf8] text-[#1c1d1f] p-10 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between border border-[#e5dfcc]">
           
-          <div className="flex justify-between items-center mb-4">
-            {/* 🎯 [개편 3]: 장르 뱃지를 차가운 블루에서 메인화면 아이디 링크 톤과 일치하는 소프트 골드 조합으로 튜닝 */}
-            <div className="text-xs font-bold text-amber-400/90 uppercase tracking-widest bg-amber-950/30 border border-amber-900/40 px-3 py-1 rounded-sm">
-              {art.style || "European Paintings"}
+          <div>
+            <div className="flex justify-between items-start mb-6">
+              {/* 주황색 배제 ➡️ 클래식 골드 톤 브랜딩 뱃지 */}
+              <div className="text-[11px] font-black text-[#8a6d3b] uppercase tracking-widest bg-[#f4ebd0]/60 border border-[#d6c294] px-3 py-1 rounded-sm">
+                {art.style || "European Paintings"}
+              </div>
+              
+              {/* 북마크 토글 버튼 */}
+              <button
+                onClick={handleToggleBookmark}
+                disabled={bookmarkLoading}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 active:scale-95 disabled:opacity-50 shadow-sm cursor-pointer ${
+                  isBookmarked 
+                    ? "bg-[#8a6d3b] text-white border-[#735a2f]" 
+                    : "bg-white text-[#504939] border-[#dcd4bd] hover:bg-[#fcfaf2]"
+                }`}
+              >
+                <span>{isBookmarked ? "💛" : "🤍"}</span>
+                <span>{isBookmarked ? "컬렉션 보관 완료" : "내 컬렉션에 추가"}</span>
+              </button>
             </div>
             
-            {/* 🎯 [개편 4]: 로그인창 스타일을 이식한 은은한 다크 그레이/골드 포인트 북마크 스위치 */}
-            <button
-              onClick={handleToggleBookmark}
-              disabled={bookmarkLoading}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 active:scale-95 disabled:opacity-50 shadow-md cursor-pointer ${
-                isBookmarked 
-                  ? "bg-amber-600/20 text-amber-400 border-amber-500/40 hover:bg-amber-600/30" 
-                  : "bg-neutral-800/80 text-neutral-300 border-neutral-700/50 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              <span>{isBookmarked ? "💛" : "🤍"}</span>
-              <span>{isBookmarked ? "북마크 취소하기" : "내 컬렉션에 추가"}</span>
-            </button>
-          </div>
-          
-          <h1 className="text-4xl font-black mb-1 tracking-tight text-white font-sans">
-            {art.titleEn || art.title || "Untitled Masterpiece"}
-          </h1>
-          
-          {art.titleKo && art.titleKo !== "작품명 번역 중" && art.titleKo !== art.titleEn && (
-            <h2 className="text-sm font-semibold text-amber-500/80 mb-5 tracking-wide">
-              국내 한글 통칭: {art.titleKo}
-            </h2>
-          )}
-          
-          <p className="text-md text-neutral-400 mb-6 border-b border-neutral-800 pb-5 font-medium font-serif italic">
-            {art.artist || "Unknown Artist"}, <span className="text-neutral-500 font-sans not-italic">{art.year}</span>
-          </p>
-          
-          {/* 가이드 스크립트 박스 */}
-          <div className="bg-[#151618] p-6 rounded-xl border border-neutral-800 shadow-inner">
-            <h3 className="text-xs font-black mb-3 flex items-center tracking-wider text-neutral-400">
-              <span className="bg-amber-600 text-white text-[9px] font-black px-2 py-0.5 rounded-sm mr-2 tracking-normal">AI DOCENT</span>
-              AUDIO GUIDE SCRIPT
-            </h3>
-            <p className={`leading-relaxed text-sm ${isDefaultStory ? "text-neutral-600 italic" : "text-neutral-200 font-normal"}`}>
-              {art.docentStory}
+            {/* 오리지널 영문 텍스트 헤드 */}
+            <h1 className="text-3xl font-black mb-1 tracking-tight text-[#1a1b1d] font-sans leading-tight">
+              {art.titleEn || art.title || "Untitled Masterpiece"}
+            </h1>
+            
+            {/* 한글 통칭 타이틀 */}
+            {art.titleKo && art.titleKo !== "작품명 번역 중" && art.titleKo !== art.titleEn && (
+              <h2 className="text-sm font-bold text-[#8a6d3b] mb-6 tracking-wide">
+                국내 한글 명칭: {art.titleKo}
+              </h2>
+            )}
+            
+            {/* 메타 인포 라벨 단락 */}
+            <p className="text-md text-[#554e40] mb-8 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
+              {art.artist || "Unknown Artist"}, <span className="text-neutral-500 font-sans not-italic font-bold">{art.year}</span>
             </p>
             
-            {/* 🎯 [개편 5]: 하단 연산 버튼들을 전부 메인화면 로그인/카메라 버튼 양식인 고급 차 차콜-그라데이션 입체 스킨으로 교체 */}
+            {/* AI 도슨트 오디오 오프셋 컨테이너 박스 */}
+            <div className="bg-[#f7f5ed] p-6 rounded-lg border border-[#e5dfcc] shadow-inner">
+              <h3 className="text-[10px] font-black mb-3 flex items-center tracking-widest text-[#706652]">
+                <span className="bg-[#8a6d3b] text-white text-[9px] font-black px-2 py-0.5 rounded-sm mr-2 tracking-normal">AI DOCENT</span>
+                AUDIO GUIDE SCRIPT
+              </h3>
+              <p className={`leading-relaxed text-sm font-sans ${isDefaultStory ? "text-neutral-400 italic" : "text-[#2e2b24] font-normal"}`}>
+                {art.docentStory}
+              </p>
+            </div>
+          </div>
+
+          {/* 🎯 [버튼 디자인 변경]: 주황색 전면 철폐 ➡️ 앤틱 차콜/골드 리얼 플레이트 단추 탑재 */}
+          <div className="mt-8">
             {isDefaultStory ? (
               <button 
                 onClick={handleGenerateDocent}
                 disabled={isGenerating}
-                className="mt-6 w-full px-6 py-3.5 bg-gradient-to-r from-neutral-800 to-neutral-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-full border border-neutral-700 font-bold text-xs tracking-wide shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer"
+                className="w-full px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#8a6d3b] hover:to-[#735a2f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
               >
-                {isGenerating ? "✨ 제미나이가 예술적 해설을 정밀 작성 중..." : "✨ AI 도슨트 오디오 가이드 생성"}
+                {isGenerating ? "✨ 제미나이가 예술 해설을 엄선 작성 중..." : "✨ AI 도슨트 스크립트 도록 생성"}
               </button>
             ) : (
-              <div className="flex flex-col gap-2 mt-6">
+              <div className="flex flex-col gap-2">
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-neutral-100 to-neutral-200 hover:from-white hover:to-white text-neutral-900 rounded-full font-black text-xs tracking-wide shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full px-6 py-4 bg-gradient-to-r from-[#8a6d3b] to-[#735a2f] hover:from-[#9c7d46] hover:to-[#856a39] text-white rounded-md font-black text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5 uppercase"
                   >
-                    {isPaused ? "▶️ 도슨트 이어서 청취하기" : "🔊 오디오 가이드 재생"}
+                    {isPaused ? "▶️ 도슨트 오디오 가이드 이어서 재생" : "🔊 오디오 가이드 가동 시작"}
                   </button>
                 ) : (
                   <button 
                     onClick={handlePauseTTS}
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-full font-bold text-xs tracking-wide shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                    className="w-full px-6 py-4 bg-gradient-to-r from-[#c5a059] to-[#a38144] hover:from-[#b4904e] hover:to-[#927137] text-white rounded-md font-bold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer"
                   >
                     ⏸️ 오디오 가이드 일시정지
                   </button>
@@ -314,14 +335,15 @@ export default function ArtworkDetail() {
                 {(isSpeaking || isPaused) && (
                   <button 
                     onClick={handleStopTTS}
-                    className="text-[11px] text-neutral-500 hover:text-rose-400 transition-all underline mt-3 text-center cursor-pointer tracking-tight"
+                    className="text-[11px] text-[#88806f] hover:text-rose-600 transition-all underline mt-3 text-center cursor-pointer tracking-tight font-medium"
                   >
-                    ⏹️ 해설 처음부터 다시 듣기 (정지)
+                    ⏹️ 해설 처음부터 다시 정주행 (처음으로)
                   </button>
                 )}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </main>
