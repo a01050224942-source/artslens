@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 🎯 [인프라 치트키 1] Vercel 환경 변수가 느리게 땡겨와질 때를 대비한 2중 방어선
-// 링킹 꼬임이 의심된다면 따옴표 안에 새로 발급받으신 진짜 제미나이 새 API 키(AIzaSy...)를 생으로 적으셔도 됩니다!
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "가은님의_진짜_제미나이_새_API_KEY_문자열";
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// 링킹 꼬임이 의심된다면 따옴표 안에 새로 발급받으신 진짜 그록 새 API 키(gsk_...)를 생으로 적으셔도 됩니다!
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "가은님의_진짜_그록_새_API_KEY_문자열";
 
 // 🎯 [인프라 치트키 2] Vercel 기본 10초 타임아웃 제한을 완벽하게 해제하고 버저비터 프리패스로 뚫어버리는 선언
 export const runtime = "edge";
@@ -15,16 +13,10 @@ export async function POST(request) {
     const body = await request.json();
     const { titleEn, titleKo, artist, year, style, selectedKeywords } = body;
 
-    if (!GEMINI_API_KEY) {
-      console.error("❌ 인프라 패닉: 제미나이 API 자격 증명이 유실되었습니다.");
-      return NextResponse.json({ error: "Gemini API Key Missing" }, { status: 500 });
+    if (!GROQ_API_KEY) {
+      console.error("❌ 인프라 패닉: 그록 API 자격 증명이 유실되었습니다.");
+      return NextResponse.json({ error: "Groq API Key Missing" }, { status: 500 });
     }
-
-    // 2. 가장 똑똑하고 텍스트 생성 전송률이 높은 최신형 추론 인스턴스 호출
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
-    });
 
     // 🎯 [핵심 패치]: 사용자가 선택한 키워드가 있으면 지시사항으로 조립하고, 없으면 종합 해설로 대체하는 동적 텍스트 설계
     const keywordsInstructions = selectedKeywords && selectedKeywords.length > 0
@@ -60,10 +52,31 @@ export async function POST(request) {
       }
     `;
 
-    // 4. 제미나이 신경망 연산 가동 및 응답 수신
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
+    // 4. 그록(Groq) 초고속 추론 엔진 가동 및 응답 수신
+    // 원본의 JSON 강제 옵션을 충족하기 위해 response_format 구조를 확실하게 바인딩했습니다.
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }, // 🎯 JSON 파싱 에러 완벽 원천 차단
+        temperature: 0.6
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || "Groq 인프라 통신 실패");
+    }
+
+    const groqData = await response.json();
+    const responseText = groqData.choices[0].message.content;
 
     // 5. 정합성 파싱 완료 후 프론트엔드로 통과 계약 방출
     const data = JSON.parse(responseText);
