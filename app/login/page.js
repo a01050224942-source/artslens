@@ -1,172 +1,159 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Login() {
-  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // 🔐 이메일 로그인/회원가입 처리
-  const handleAuth = async (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      alert("이메일과 비밀번호를 모두 입력해주세요.");
-      return;
-    }
-
+    if (!email || !password) return;
     setLoading(true);
     try {
-      if (isRegister) {
-        // 회원가입
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Firestore에 유저 문서 초기화 (북마크 배열 포함)
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          createdAt: new Date().toISOString(),
-          bookmarks: []
-        });
-
-        alert("🏛️ ArtLens 미술관 회원가입이 완료되었습니다!");
-      } else {
-        // 로그인
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("🔑 성공적으로 로그인되었습니다. 관람을 시작합니다.");
-      }
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("🔒 도슨트 룸에 안전하게 입장하셨습니다.");
       router.push("/");
     } catch (error) {
-      console.error("인증 에러:", error);
-      if (error.code === "auth/email-already-in-use") {
-        alert("이미 사용 중인 이메일입니다.");
-      } else if (error.code === "auth/weak-password") {
-        alert("비밀번호는 6자리 이상이어야 합니다.");
-      } else if (error.code === "auth/invalid-credential") {
-        alert("이메일 또는 비밀번호가 올바르지 않습니다.");
-      } else {
-        alert("인증 중 오류가 발생했습니다. 다시 시도해주세요.");
-      }
+      console.error("이메일 로그인 에러:", error);
+      alert("이메일 또는 비밀번호를 다시 확인해 주세요.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🌐 구글 소셜 로그인 처리
+  // 🎯 [구글 로그인 트래킹 엔진 보정]
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    // 구글 팝업창이 뜨기 전 기기별 계정 선택 세션을 강제로 초기화하여 인증 정합성 확보
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // 기존 유저 문서가 있는지 확인 후 없으면 생성
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (!userDocSnap.exists()) {
         await setDoc(userDocRef, {
           email: user.email,
-          createdAt: new Date().toISOString(),
           bookmarks: []
         });
       }
 
-      alert(`👋 반갑습니다, ${user.displayName || "관람객"}님!`);
+      alert("💛 Google 계정으로 원클릭 관람을 시작합니다.");
       router.push("/");
     } catch (error) {
-      console.error("구글 로그인 에러:", error);
-      alert("구글 로그인 중 오류가 발생했습니다.");
+      console.error("❌ 구글 로그인 인프라 크래시 사유:", error);
+      
+      // 가은님이 브라우저에서 즉시 원인을 진단할 수 있도록 상세 경고 바인딩
+      if (error.code === "auth/unauthorized-domain") {
+        alert("🚨 [도메인 차단 에러]\n현재 Vercel 배포 주소가 파이어베이스 '승인된 도메인' 리스트에 등록되지 않았습니다. 콘솔 설정을 확인해 주세요!");
+      } else if (error.code === "auth/popup-closed-by-user") {
+        alert("💡 구글 로그인 팝업 창이 인증이 끝나기 전에 닫혔습니다.");
+      } else {
+        alert(`인증 오류 발생: ${error.message}\n(에러코드: ${error.code})`);
+      }
     }
   };
 
   return (
-    // 🎯 [개편 1]: 메인/상세화면과 100% 일치시킨 오프라인 고급 미술관 그레이(#242629) 마스터 배경
-    <main className="min-h-screen bg-[#242629] text-white flex items-center justify-center p-6 relative overflow-hidden">
+    <main className="min-h-screen bg-[#242629] text-white flex flex-col items-center justify-center p-6 relative overflow-x-hidden">
       
-      {/* 상세페이지와 싱크를 맞춘 부드러운 광폭 원뿔형 프리미엄 스포트라이트 조명 오버레이 */}
+      {/* 메인 홈 이동 탈출 버튼 */}
+      <div className="absolute top-8 left-8 z-30">
+        <button 
+          onClick={() => router.push("/")} 
+          className="text-neutral-400 hover:text-[#e2c184] transition-colors text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer group"
+        >
+          <span className="group-hover:-translate-x-1 transition-transform">←</span> 
+          <span>메인 미술관 갤러리로 돌아가기</span>
+        </button>
+      </div>
+
+      {/* 프리미엄 백그라운드 스포트라이트 조명 광원 유지 */}
       <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-[550px] pointer-events-none z-0 opacity-80"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-[550px] pointer-events-none z-10 opacity-90"
         style={{
-          backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.2) 0%, rgba(255, 253, 220, 0.04) 60%, transparent 100%)",
-          clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)"
+          backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.18) 0%, rgba(255, 253, 220, 0.04) 60%, transparent 100%)",
+          clipPath: "polygon(38% 0, 62% 0, 100% 100%, 0 100%)"
         }}
       ></div>
 
-      {/* 🎯 [개편 2]: 로그인 카드 배경을 중후한 전시실 내부 다크 차콜(#1a1b1d) 및 금색 테두리로 직사각형 매핑 */}
+      {/* 프레임 패널 컨테이너 */}
       <div 
-        className="w-full max-w-md bg-[#1a1b1d] rounded-none p-10 shadow-[0_30px_70px_rgba(0,0,0,0.85)] border-4 relative z-10"
+        className="w-full max-w-md bg-[#1a1b1d] rounded-none p-8 sm:p-10 shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] relative z-20 transition-all duration-300"
         style={{
-          borderImage: "linear-gradient(to bottom right, #e5c483 0%, #cfa862 30%, #87672a 60%, #bc954f 100%) 1"
+          borderImage: "linear-gradient(to bottom right, #dfba73 0%, #cfa862 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
+          borderWidth: "10px",
+          borderStyle: "solid",
         }}
       >
-        {/* 서비스 타이틀 로고 헤더 */}
         <div className="text-center mb-8">
-          <h2 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent font-sans">
+          <h1 className="text-4xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent font-sans">
             ArtLens
-          </h2>
-          <p className="text-[#a38752] text-xs font-medium tracking-wide mt-1.5 font-serif italic">
-            {isRegister ? "Create Guest Account" : "Access Personal Gallery"}
+          </h1>
+          <p className="text-[#a38752] font-serif italic text-xs tracking-wide">
+            Access Personal Gallery
           </p>
         </div>
 
-        {/* 메인 이메일 폼 */}
-        <form onSubmit={handleAuth} className="space-y-5">
+        <form onSubmit={handleEmailLogin} className="space-y-5">
           <div>
-            <label className="block text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-1.5">
+            <label className="block text-[10px] font-black text-neutral-400 tracking-widest uppercase mb-2">
               Email Address
             </label>
-            <input
-              type="email"
+            <input 
+              type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="artlens@example.com"
-              className="w-full px-4 py-3 bg-[#111112] border border-neutral-700 focus:border-[#cfa862] text-white rounded-none text-sm outline-none transition-colors font-sans"
+              className="w-full px-4 py-3 bg-[#111112] border border-neutral-800 rounded-none text-sm text-white focus:outline-none focus:border-[#8a6d3b] transition-colors shadow-inner"
               required
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-1.5">
+            <label className="block text-[10px] font-black text-neutral-400 tracking-widest uppercase mb-2">
               Password
             </label>
-            <input
-              type="password"
+            <input 
+              type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-[#111112] border border-neutral-700 focus:border-[#cfa862] text-white rounded-none text-sm outline-none transition-colors font-sans"
+              className="w-full px-4 py-3 bg-[#111112] border border-neutral-800 rounded-none text-sm text-white focus:outline-none focus:border-[#8a6d3b] transition-colors shadow-inner"
               required
             />
           </div>
 
-          {/* 🎯 [개편 3]: 메인 로그인/회원가입 메인 버튼 - 앤틱 차콜 월넛 그라데이션 및 황동 골드 레터링 */}
-          <button
+          <button 
             type="submit"
             disabled={loading}
-            className="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] border border-[#a38752]/60 rounded-none font-black text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 cursor-pointer uppercase"
+            className="w-full py-3.5 mt-2 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] font-bold text-xs rounded-none border border-[#a38752]/40 shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
           >
-            {loading ? "Authenticating..." : isRegister ? "🏛️ 미술관 계정 생성하기" : "🔑 도슨트 룸 입장하기"}
+            🔑 {loading ? "입장 잠금 해제 중..." : "도슨트 룸 입장하기"}
           </button>
         </form>
 
-        {/* 구분선 스트립 */}
         <div className="relative my-6 flex items-center justify-center">
-          <div className="absolute w-full border-t border-neutral-800"></div>
-          <span className="relative bg-[#1a1b1d] px-3 text-[10px] text-neutral-500 uppercase tracking-widest font-mono">
-            OR
+          <div className="absolute w-full border-t border-neutral-900"></div>
+          <span className="relative z-10 px-3 bg-[#1a1b1d] text-[9px] font-black text-neutral-500 tracking-widest uppercase">
+            or
           </span>
         </div>
 
-        {/* 🎯 [개편 4]: 구글 로그인 버튼 - 은은한 다크 원목 스킨에 은은한 골드 프레임 테두리 매칭 */}
-        <button
+        <button 
           onClick={handleGoogleLogin}
-          className="w-full px-6 py-3 bg-[#151618] hover:bg-[#201a11] text-neutral-300 hover:text-[#e2c184] border border-neutral-700 hover:border-[#a38752]/50 rounded-none font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
+          className="w-full py-3.5 bg-[#111112] hover:bg-neutral-900 text-neutral-300 font-bold text-xs rounded-none border border-neutral-800 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer tracking-wide"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -189,14 +176,10 @@ export default function Login() {
           Google 계정으로 원클릭 관람
         </button>
 
-        {/* 🎯 [개편 5]: 하단 모드 전환 앵커 텍스트 - 주황색을 배제하고 소프트 앤틱 골드 톤으로 정렬 */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-xs text-neutral-400 hover:text-[#e2c184] transition-colors font-medium underline underline-offset-4 decoration-neutral-600 hover:decoration-[#a38752] cursor-pointer"
-          >
-            {isRegister ? "이미 계정이 있으신가요? 로그인하기" : "처음 오셨나요? ArtLens 무료 가입하기"}
-          </button>
+        <div className="text-center mt-6">
+          <Link href="/register" className="text-[11px] text-neutral-500 hover:text-white underline underline-offset-4 transition-colors font-medium">
+            처음 오셨나요? ArtLens 무료 가입하기
+          </Link>
         </div>
 
       </div>
