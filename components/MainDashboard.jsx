@@ -7,13 +7,12 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function Home() {
+export default function MainDashboard() {
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [user, setUser] = useState(null); 
-  const [isMobile, setIsMobile] = useState(false); // 📱 모바일 화면 감지 상태 추가
   
   const gridRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -36,17 +35,7 @@ export default function Home() {
       setUser(currentUser);
     });
 
-    // 화면 크기 체크 트리거 가동
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => unsubscribe();
   }, []);
 
   const handlePrev = () => {
@@ -131,16 +120,11 @@ export default function Home() {
 
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
-    // 🎯 [대교정 패치]: 폰화면(isMobile)일 때는 시야각 축소 계산 적용하여 화면 이탈 완벽 방지
-    const translateX = offset * (isMobile ? 75 : 120); 
-    const translateZ = absOffset * (isMobile ? -130 : -190); 
-    const rotateY = sign * -35; 
-
     return {
-      transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg)`,
+      "--offset": offset,
+      "--abs-offset": absOffset,
+      "--sign": sign,
       zIndex: 10 - absOffset,
-      opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.45 : 0.12,
-      filter: absOffset === 0 ? 'none' : 'blur(2px) brightness(0.55)',
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
     };
   };
@@ -162,7 +146,7 @@ export default function Home() {
       {/* SECTION 1: 3D Hero Carousel */}
       <section className="h-screen w-full flex flex-col justify-between relative p-4 sm:p-8 pb-4">
         
-        {/* 상단 우측 내비게이션 콘솔 (모바일 마진 최적화) */}
+        {/* 상단 우측 내비게이션 콘솔 */}
         <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 text-xs font-medium">
           {user ? (
             <div className="flex items-center gap-2 sm:gap-3 bg-[#1a1b1d]/90 backdrop-blur-md px-3 sm:px-4 py-2 rounded-full border border-neutral-700 shadow-2xl">
@@ -204,10 +188,10 @@ export default function Home() {
           </button>
         </header>
 
-        {/* 3D 가변 비율 액자 캐러셀 (모바일 크기 유동식 바인딩) */}
+        {/* 3D 가변 비율 액자 캐러셀 구역 */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
-            className="relative w-[240px] sm:w-[350px] flex items-center justify-center"
+            className="relative w-[230px] sm:w-[340px] flex items-center justify-center h-[340px] sm:h-[450px]"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
@@ -215,10 +199,10 @@ export default function Home() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none transition-all duration-500 ${
+                  className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none card-3d-layer ${
                     isCenter 
-                      ? "border-[8px] sm:border-[14px] border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)]" 
-                      : "border-[5px] sm:border-[10px] border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)]"
+                      ? "border-[8px] sm:border-[14px] border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)] opacity-100 filter-none" 
+                      : "border-[5px] sm:border-[10px] border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)] opacity-40 hover:opacity-60"
                   }`}
                   style={{
                     ...getCardStyle(index),
@@ -226,6 +210,19 @@ export default function Home() {
                   }}
                   onClick={() => handleCardClick(index, isCenter)}
                 >
+                  <style jsx>{`
+                    .card-3d-layer {
+                      transform: translateX(calc(var(--offset) * 68%)) translateZ(calc(var(--abs-offset) * -120px)) rotateY(calc(var(--sign) * -30deg));
+                      filter: var(--abs-offset) === 0 ? none : blur(1px) brightness(0.6);
+                    }
+                    @media (min-width: 640px) {
+                      .card-3d-layer {
+                        transform: translateX(calc(var(--offset) * 115%)) translateZ(calc(var(--abs-offset) * -180px)) rotateY(calc(var(--sign) * -35deg));
+                        filter: var(--abs-offset) === 0 ? none : blur(2px) brightness(0.55);
+                      }
+                    }
+                  `}</style>
+                  
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
                     <div className="w-full h-auto bg-black border-b border-[#2b2110]">
                       <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto object-contain block" draggable="false" />
@@ -269,8 +266,6 @@ export default function Home() {
       <section ref={gridRef} className="py-12 sm:py-24 px-4 sm:px-8 max-w-5xl mx-auto relative z-20">
         <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
         
-        {/* 🎯 [대교정 포인트]: 모바일 너비에서 무조건 한 줄에 2개 기둥이 서도록 'columns-2' 고정 배정! */}
-        {/* 카드 사이 마진도 모바일에서는 gap-4, space-y-4로 슬림하게 픽스하여 PC 스타일 밀도 완벽 이식 */}
         <div className="columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6">
           {artworks.map((art) => (
             <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`} className="block break-inside-avoid">
@@ -281,7 +276,6 @@ export default function Home() {
                 <div className="w-full h-auto bg-black">
                   <img src={art.imageUrl} className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-500 block" alt={art.titleEn} />
                 </div>
-                {/* 폰 화면 텍스트가 거대화되지 않게 패딩과 폰트 크기를 기기별 분기 다운스케일 */}
                 <div className="p-2 sm:p-3.5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
                   <h3 className="font-extrabold text-[#e2c184] truncate text-[11px] sm:text-sm font-sans tracking-tight">{art.titleEn}</h3>
                   <p className="text-[#a38752] font-serif italic text-[9px] sm:text-[11px] mt-0.5 truncate">{art.artist}</p>
