@@ -62,7 +62,7 @@ export default function MyPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white font-medium">개인 수장고 확인 중...</div>;
+  if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white font-medium">개인 보관함 확인 중...</div>;
 
   return (
     <div className="bg-[#242629] min-h-screen text-white font-sans scroll-smooth p-8 relative overflow-x-hidden">
@@ -76,7 +76,7 @@ export default function MyPage() {
               My Masterpiece Collection
             </h1>
             <p className="text-[#a38752] text-sm mt-2 font-medium tracking-wide">
-              👤 <span className="text-[#e2c184] font-bold underline underline-offset-4 decoration-[#8a6d3b]">{user?.email?.split("@")[0]}</span>님이 선별한 {bookmarkedArtworks.length}점의 마스터피스 수장고
+              👤 <span className="text-[#e2c184] font-bold underline underline-offset-4 decoration-[#8a6d3b]">{user?.email?.split("@")[0]}</span>님이 선별한 {bookmarkedArtworks.length}점의 마스터피스 보관함
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export default function MyPage() {
         {/* 보관함 그리드 구역 */}
         {bookmarkedArtworks.length === 0 ? (
           <div className="text-center py-32 bg-[#1a1b1d] border-2 border-dashed border-neutral-800 p-8 rounded-none">
-            <p className="text-neutral-500 font-medium text-sm">아직 수장고에 보관된 명화가 없습니다.</p>
+            <p className="text-neutral-500 font-medium text-sm">아직 보관함에 보관된 명화가 없습니다.</p>
             <p className="text-[#a38752] text-xs font-serif italic mt-2">Explore the exhibition and select your masterpieces.</p>
             <Link href="/">
               <button className="mt-6 px-6 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] text-[#e2c184] border border-[#a38752]/40 text-xs font-bold rounded-none hover:from-[#87672a] cursor-pointer">

@@ -208,16 +208,7 @@ export default function ArtworkDetail() {
   return (
     <main className="min-h-screen bg-[#242629] text-white p-8 relative flex flex-col items-center justify-center overflow-x-hidden">
       
-      {/* 🎯 [디자인 변경 1]: 위는 좁고 아래는 넓게 떨어지는 리얼 원뿔형 갤러리 스포트라이트 조명 구현 */}
-      <div 
-  className="absolute top-0 left-1/2 -translate-x-1/2 md:left-[25%] md:translate-x-0 w-[450px] sm:w-[550px] h-[750px] pointer-events-none z-0 opacity-90 transition-all duration-500"
-  style={{
-    backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.25) 0%, rgba(255, 253, 220, 0.05) 55%, transparent 100%)",
-    // 모바일에서는 화면 중앙, 데스크톱(md) 이상에서는 왼쪽 명화 박스의 정중앙(50% 0)을 기점으로 원뿔이 퍼지도록 마스크 조정
-    clipPath: "polygon(45% 0, 55% 0, 100% 100%, 0 100%)"
-  }}
-></div>
-
+      {/* 뒤로가기 버튼 */}
       <div className="w-full max-w-6xl flex justify-start mb-4 relative z-10">
         <button 
           onClick={() => router.back()} 
@@ -230,37 +221,54 @@ export default function ArtworkDetail() {
       {/* 메인 컴포넌트 프레임 레이아웃 */}
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-stretch justify-center gap-12 relative z-10">
         
-        {/* 🖼️ 왼쪽: 명화 전용 진열대 (검은색 배경창 완벽 파괴 💥 및 메인 화면 연동 앤틱 골드 액자 조립) */}
-        <div className="md:w-1/2 flex items-center justify-center p-2 relative">
+        {/* 🖼️ 왼쪽 명화 전용 구역 (relative 속성을 주어 하위 조명의 부모 기준점으로 락인) */}
+        <div className="md:w-1/2 flex flex-col items-center justify-center p-2 relative">
+          
+          {/* 🎯 [핵심 교정 패치 1]: 원뿔형 스포트라이트를 액자 주머니 '바로 위 자식'으로 전격 배치!! */}
+          {/* 이제 화면 창 크기가 변해도, 조명의 정중앙과 액자의 정중앙이 단 1픽셀의 오차도 없이 일치합니다. */}
           <div 
-            className="bg-[#1a1b1d] rounded-sm overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.8),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300"
+            className="absolute pointer-events-none z-10 opacity-95 transition-all duration-500"
             style={{
-              borderImage: "linear-gradient(to bottom right, #dfba73 0%, #c5a059 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
+              // 액자 바로 윗단(top-[-120px] 부근)에서 시작하여 아래로 웅장하게 번지도록 기하학 설계
+              top: "-150px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "550px",
+              height: "750px",
+              backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.25) 0%, rgba(255, 253, 220, 0.05) 55%, transparent 100%)",
+              clipPath: "polygon(43% 0, 57% 0, 100% 100%, 0 100%)"
+            }}
+          ></div>
+
+          {/* 앤틱 골드 베벨 액자 하드웨어 */}
+          <div 
+            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20"
+            style={{
+              borderImage: "linear-gradient(to bottom right, #dfba73 0%, #cfa862 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
               borderWidth: "14px",
               borderStyle: "solid",
-              borderRadius: "4px"
             }}
           >
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
-              className="max-h-[550px] w-full object-contain"
+              // 🎯 [핵심 교정 패치 2]: 메인/마이페이지 공백 쳐내기 공식과 동일하게 w-full h-full object-cover를 이식하여 
+              // 상세페이지 액자 틀 내부에서도 불규칙한 데이터 여백선을 완전 박멸 처리
+              className="max-h-[550px] w-full object-cover"
               draggable="false"
             />
           </div>
         </div>
 
-        {/* 📄 오른쪽: 미술관 정품 화이트 설명 보드 스페이스 (`unnamed.jpg` 대댓글 레이아웃 미학 반영) */}
-        <div className="md:w-1/2 bg-[#fdfcf8] text-[#1c1d1f] p-10 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between border border-[#e5dfcc]">
+        {/* 📄 오른쪽: 미술관 정품 화이트 설명 패널 스페이스 */}
+        <div className="md:w-1/2 bg-[#fdfcf8] text-[#1c1d1f] p-10 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between border border-[#e5dfcc] relative z-20">
           
           <div>
             <div className="flex justify-between items-start mb-6">
-              {/* 주황색 배제 ➡️ 클래식 골드 톤 브랜딩 뱃지 */}
               <div className="text-[11px] font-black text-[#8a6d3b] uppercase tracking-widest bg-[#f4ebd0]/60 border border-[#d6c294] px-3 py-1 rounded-sm">
                 {art.style || "European Paintings"}
               </div>
               
-              {/* 북마크 토글 버튼 */}
               <button
                 onClick={handleToggleBookmark}
                 disabled={bookmarkLoading}
@@ -275,24 +283,20 @@ export default function ArtworkDetail() {
               </button>
             </div>
             
-            {/* 오리지널 영문 텍스트 헤드 */}
             <h1 className="text-3xl font-black mb-1 tracking-tight text-[#1a1b1d] font-sans leading-tight">
               {art.titleEn || art.title || "Untitled Masterpiece"}
             </h1>
             
-            {/* 한글 통칭 타이틀 */}
             {art.titleKo && art.titleKo !== "작품명 번역 중" && art.titleKo !== art.titleEn && (
               <h2 className="text-sm font-bold text-[#8a6d3b] mb-6 tracking-wide">
                 국내 한글 명칭: {art.titleKo}
               </h2>
             )}
             
-            {/* 메타 인포 라벨 단락 */}
             <p className="text-md text-[#554e40] mb-8 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
               {art.artist || "Unknown Artist"}, <span className="text-neutral-500 font-sans not-italic font-bold">{art.year}</span>
             </p>
             
-            {/* AI 도슨트 오디오 오프셋 컨테이너 박스 */}
             <div className="bg-[#f7f5ed] p-6 rounded-lg border border-[#e5dfcc] shadow-inner">
               <h3 className="text-[10px] font-black mb-3 flex items-center tracking-widest text-[#706652]">
                 <span className="bg-[#8a6d3b] text-white text-[9px] font-black px-2 py-0.5 rounded-sm mr-2 tracking-normal">AI DOCENT</span>
@@ -304,13 +308,12 @@ export default function ArtworkDetail() {
             </div>
           </div>
 
-          {/* 🎯 [버튼 디자인 변경]: 주황색 전면 철폐 ➡️ 앤틱 차콜/골드 리얼 플레이트 단추 탑재 */}
           <div className="mt-8">
             {isDefaultStory ? (
               <button 
                 onClick={handleGenerateDocent}
                 disabled={isGenerating}
-                className="w-full px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#8a6d3b] hover:to-[#735a2f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
+                className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#8a6d3b] hover:to-[#735a2f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
               >
                 {isGenerating ? "✨ 제미나이가 예술 해설을 엄선 작성 중..." : "✨ AI 도슨트 스크립트 도록 생성"}
               </button>
