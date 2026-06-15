@@ -108,7 +108,7 @@ export default function MainDashboard() {
     }
   };
 
-  // 🎯 [대교정 포인트]: 꼬이던 가로/세로 인라인 스케일 수식을 순수 반응형 CSS 레이어로 완전 격리
+  // 🎯 3D 가상 차원 입체 이동 계수 공식
   const getCardStyle = (index) => {
     let offset = index - currentIndex;
     const halfLength = Math.floor(artworks.length / 2);
@@ -190,10 +190,10 @@ export default function MainDashboard() {
         </header>
 
         {/* 3D 가변 비율 액자 캐러셀 구역 */}
-        {/* 🎯 [대교정 포인트]: 흰색 보더 버그를 유발하던 border 클래스를 싹 무력화하고 강제 하드웨어 높이 시야각 할당 */}
-        <div className="flex-grow flex items-center justify-center my-2">
+        {/* 🎯 [완벽 복원]: 고정 높이를 완전히 해체하고, 작품 종횡비대로 액자가 가변 조절되는 순정 공식 복구 */}
+        <div className="flex-grow flex items-center justify-center my-2 relative min-h-[320px] sm:min-h-[480px]">
           <div 
-            className="relative w-[220px] sm:w-[340px] h-[320px] sm:h-[460px] flex items-center justify-center"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] sm:w-[340px] flex items-center justify-center"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
@@ -201,37 +201,37 @@ export default function MainDashboard() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  className="absolute w-full h-full bg-[#111112] rounded-none overflow-hidden select-none card-3d-layer"
-                  style={{
-                    ...getCardStyle(index),
-                    borderStyle: "solid",
-                    borderImage: "linear-gradient(to bottom right, #e5c483 0%, #cfa862 20%, #87672a 40%, #bc954f 60%, #a37d37 80%, #fcebc2 100%) 14",
-                  }}
+                  className={`absolute w-full h-auto bg-[#111112] rounded-none overflow-hidden select-none card-3d-layer ${
+                    isCenter 
+                      ? "border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)] opacity-100 filter-none" 
+                      : "border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)] opacity-45"
+                  }`}
+                  style={getCardStyle(index)}
                   onClick={() => handleCardClick(index, isCenter)}
                 >
                   <style jsx>{`
                     .card-3d-layer {
-                      border-width: 6px;
-                      transform: translateX(calc(var(--offset) * 70%)) translateZ(calc(var(--abs-offset) * -110px)) rotateY(calc(var(--sign) * -28deg));
-                      opacity: var(--offset) === 0 ? 1 : calc(0.5 - (var(--abs-offset) * 0.15));
-                      box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+                      /* 🎯 흰색 유령 박스 버그 완전 해체 및 황동색 액자 두께 완전 복원 */
+                      border-width: 10px;
+                      border-image: linear-gradient(to bottom right, #e5c483 0%, #cfa862 20%, #87672a 40%, #bc954f 60%, #a37d37 80%, #fcebc2 100%) 14;
+                      transform: translateX(calc(var(--offset) * 68%)) translateZ(calc(var(--abs-offset) * -110px)) rotateY(calc(var(--sign) * -28deg));
                     }
                     @media (min-width: 640px) {
                       .card-3d-layer {
-                        border-width: 12px;
+                        /* 🎯 PC 화면 기존 순정 정밀 두께 복구 */
+                        border-width: 14px;
                         transform: translateX(calc(var(--offset) * 115%)) translateZ(calc(var(--abs-offset) * -180px)) rotateY(calc(var(--sign) * -35deg));
-                        opacity: var(--offset) === 0 ? 1 : 0.45;
-                        box-shadow: 0 20px 50px rgba(0,0,0,0.85);
                       }
                     }
                   `}</style>
                   
-                  <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                    <div className="w-full h-[calc(100%-55px)] sm:h-[calc(100%-76px)] bg-black flex items-center justify-center overflow-hidden">
-                      <img src={art.imageUrl} alt={art.titleEn} className="w-full h-full object-contain block" draggable="false" />
+                  <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-auto" onClick={(e) => !isCenter && e.preventDefault()}>
+                    {/* 🎯 h-auto block 조합으로 작품 고유 크기대로 액자 테두리가 자연스럽게 완벽 피팅 */}
+                    <div className="w-full h-auto bg-black border-b border-[#2b2110]">
+                      <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto block object-contain" draggable="false" />
                     </div>
                     <div 
-                      className="w-full h-[55px] sm:h-[76px] p-1.5 sm:p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
+                      className="w-full p-2.5 sm:p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
                       style={{ background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" }}
                     >
                       <div className="absolute inset-1 sm:inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
