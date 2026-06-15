@@ -322,7 +322,7 @@ export default function ArtworkDetail() {
             {/* 🎯 [수정 포인트 3]: 다중 선택 가능한 메인 키워드 조합 인터페이스 칩 배치 구역 */}
             <div className="mb-6 bg-[#fcfbfa] p-4 rounded-md border border-[#eadabe] shadow-sm">
               <h4 className="text-xs font-black text-[#665e4e] mb-3 flex items-center gap-1 tracking-wide">
-                <span>🧩</span> 원하는 해설 관점 조합하기 (중복 선택 가능)
+                <span>🧩</span> 원하는 해설 관점 선택
               </h4>
               <div className="flex flex-wrap gap-2">
                 {keywordOptions.map((keyword) => {
@@ -361,7 +361,7 @@ export default function ArtworkDetail() {
             </div>
           </div>
 
-          {/* 하단 유동식 동적 제어 콘솔 시스템 */}
+          {/* 하단 유동식 동적 제어 콘솔 시스템 */}보관함
           <div className="mt-8">
             {isDefaultStory ? (
               <button 

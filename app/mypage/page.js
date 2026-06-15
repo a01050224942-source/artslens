@@ -23,6 +23,7 @@ export default function MyPage() {
       setUser(currentUser);
 
       try {
+        // 1. 유저의 북마크 ID 리스트 가져오기
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -31,6 +32,7 @@ export default function MyPage() {
           const bookmarks = userData.bookmarks || [];
 
           if (bookmarks.length > 0) {
+            // 2. 전체 작품 리스트를 가져와서 북마크된 것만 필터링
             const artCollection = collection(db, "artworks");
             const artSnapshot = await getDocs(artCollection);
             const allArtworks = artSnapshot.docs.map(doc => ({
@@ -65,6 +67,7 @@ export default function MyPage() {
   if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white font-medium">개인 보관함 확인 중...</div>;
 
   return (
+    // 배경색은 고급스러운 미디엄 그레이 테마를 완벽하게 유지합니다.
     <div className="bg-[#242629] min-h-screen text-white font-sans scroll-smooth p-8 relative overflow-x-hidden">
       
       <div className="max-w-7xl mx-auto relative z-10">
@@ -80,6 +83,7 @@ export default function MyPage() {
             </p>
           </div>
 
+          {/* 내비게이션 상단 콘솔 단추 그룹 */}
           <div className="flex gap-3">
             <Link href="/">
               <button className="px-5 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] font-bold text-xs rounded-full border border-[#a38752]/60 transition-all shadow-md cursor-pointer flex items-center gap-1">
@@ -95,7 +99,7 @@ export default function MyPage() {
           </div>
         </header>
 
-        {/* 보관함 그리드 구역 */}
+        {/* 보관함 그리드 라이브러리 구역 */}
         {bookmarkedArtworks.length === 0 ? (
           <div className="text-center py-32 bg-[#1a1b1d] border-2 border-dashed border-neutral-800 p-8 rounded-none">
             <p className="text-neutral-500 font-medium text-sm">아직 보관함에 보관된 명화가 없습니다.</p>
@@ -107,23 +111,29 @@ export default function MyPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          // 🎯 [대교정 패치 1]: 마이페이지 보관함 목록도 메인처럼 'Masonry(메이슨리)' 레이아웃 엔진으로 전격 교체!
+          // 고정 격자 틀을 허물고 gap-12, space-y-12 여백을 주어 텅 빈 공간 없이 촘촘하게 흐르도록 배치합니다.
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-12 space-y-12">
             {bookmarkedArtworks.map((art) => (
-              <Link href={`/artwork/${art.id}`} key={`bookmark-${art.id}`}>
+              <Link href={`/artwork/${art.id}`} key={`bookmark-${art.id}`} className="block break-inside-avoid">
+                
+                {/* 🎯 [대교정 패치 2]: 강제 높이 제한(h-full)을 완전히 파괴하고 h-auto 가변형으로 전향 */}
+                {/* 메인 화면과 한 몸을 이루는 리얼 금색 직각 프레임 베벨 액자 처리 */}
                 <div 
-                  className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_25px_50px_rgba(0,0,0,0.6)] hover:-translate-y-1.5 duration-300"
+                  className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_25px_50px_rgba(0,0,0,0.6)] hover:-translate-y-1.5 duration-300 w-full h-auto"
                   style={{ borderImage: "linear-gradient(to right, #e5c483, #87672a) 1" }}
                 >
-                  {/* 🎯 [패치 포인트 3]: 마이페이지 보관함 그리드 이미지 영역도 가로세로 어떤 비율이든 꽉 들어차게 피팅 연동 */}
-                  <div className="h-52 overflow-hidden bg-black">
+                  {/* 🎯 [대교정 패치 3]: 이미지 영역에 w-full h-auto object-contain을 주어 
+                      작품이 위아래로 뭉개지거나 잘리는 현상을 100% 방지하고 액자가 이미지 윤곽에 따라 핏하게 줄어듦 */}
+                  <div className="w-full h-auto bg-black flex items-center justify-center">
                     <img 
                       src={art.imageUrl} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-500 block" 
                       alt={art.titleEn} 
                     />
                   </div>
 
-                  {/* 하단 네임 플레이트 */}
+                  {/* 하단 월넛 원목 패널 및 황동 금색 폰트 명찰 레이아웃 */}
                   <div className="p-5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
                     <div className="text-[10px] font-black text-[#a38752] uppercase tracking-widest mb-1.5 font-sans block">
                       {art.style || "European Paintings"}
