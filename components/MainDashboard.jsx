@@ -147,7 +147,7 @@ export default function Home() {
         }}
       ></div>
 
-      {/* SECTION 1: 3D Hero Carousel (원본 비율 보존형) */}
+      {/* SECTION 1: 3D Hero Carousel */}
       <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
         {/* 상단 우측 내비게이션 콘솔 */}
@@ -253,15 +253,15 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 w-full border-t border-[#1a1b1d]"></div>
       </section>
 
-      {/* 🎯 [대교정 포인트]: 하단 전체 작품 목록을 'Masonry(메이슨리)' 레이아웃으로 변경 */}
-      {/* columns-1 sm:columns-2 lg:columns-3 xl:columns-4 속성을 사용하여 빈 공간 없이 촘촘하게 쌓이게 함 */}
+      {/* 하단 전체 컬렉션 메이슨리 구역 */}
       <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto relative z-20">
         <h2 className="text-3xl font-bold mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
         
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-8 space-y-8">
+        {/* 🎯 [대교정 포인트]: 다닥다닥 붙어있던 가로 열 간격(gap-8 ➡️ gap-12)과 
+            세로 줄 간격(space-y-8 ➡️ space-y-12)을 한층 대폭 넓혀 갤러리 특유의 시각적 여백 미학 구축 */}
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-12 space-y-12">
           {artworks.map((art) => (
             <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`} className="block break-inside-avoid">
-              {/* 각 카드가 컬럼 안에서 쪼개지지 않도록 break-inside-avoid 적용 */}
               <div 
                 className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 duration-300 w-full h-auto"
                 style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}

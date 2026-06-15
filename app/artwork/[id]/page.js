@@ -221,22 +221,23 @@ export default function ArtworkDetail() {
       {/* 메인 컴포넌트 프레임 레이아웃 */}
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-stretch justify-center gap-12 relative z-10">
         
-        {/* 🖼️ 왼쪽 명화 전용 구역 (relative 속성을 주어 하위 조명의 부모 기준점으로 락인) */}
+        {/* 🖼️ 왼쪽 명화 전용 구역 */}
         <div className="md:w-1/2 flex flex-col items-center justify-center p-2 relative">
           
-          {/* 🎯 [핵심 교정 패치 1]: 원뿔형 스포트라이트를 액자 주머니 '바로 위 자식'으로 전격 배치!! */}
-          {/* 이제 화면 창 크기가 변해도, 조명의 정중앙과 액자의 정중앙이 단 1픽셀의 오차도 없이 일치합니다. */}
+          {/* 🎯 [대교정 패치]: 스포트라이트의 너비(width)와 투사 각도(clipPath polygon)를 확장하여 
+              메인페이지처럼 작품 전체가 빛의 반경 안에 완벽히 몰입되도록 튜닝 */}
           <div 
             className="absolute pointer-events-none z-10 opacity-95 transition-all duration-500"
             style={{
-              // 액자 바로 윗단(top-[-120px] 부근)에서 시작하여 아래로 웅장하게 번지도록 기하학 설계
-              top: "-150px",
+              top: "-160px",
               left: "50%",
               transform: "translateX(-50%)",
-              width: "550px",
-              height: "750px",
-              backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.25) 0%, rgba(255, 253, 220, 0.05) 55%, transparent 100%)",
-              clipPath: "polygon(43% 0, 57% 0, 100% 100%, 0 100%)"
+              width: "720px", // 기존 550px에서 720px로 확장하여 와이드 피팅 확보
+              height: "760px",
+              // 빛의 그라데이션 시작점을 자연스럽게 늘려 엣지 라인이 잘리지 않게 조정
+              backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.24) 0%, rgba(255, 253, 220, 0.06) 60%, transparent 100%)",
+              // polygon 상단 너비를 35% ~ 65%로 벌려 메인 캐러셀과 동일한 정통 원뿔 라인 이식
+              clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)"
             }}
           ></div>
 
@@ -252,8 +253,6 @@ export default function ArtworkDetail() {
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
-              // 🎯 [핵심 교정 패치 2]: 메인/마이페이지 공백 쳐내기 공식과 동일하게 w-full h-full object-cover를 이식하여 
-              // 상세페이지 액자 틀 내부에서도 불규칙한 데이터 여백선을 완전 박멸 처리
               className="max-h-[550px] w-full object-cover"
               draggable="false"
             />
@@ -313,7 +312,7 @@ export default function ArtworkDetail() {
               <button 
                 onClick={handleGenerateDocent}
                 disabled={isGenerating}
-                className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#8a6d3b] hover:to-[#735a2f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
+                className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#87672a] hover:to-[#6b501f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
               >
                 {isGenerating ? "✨ 제미나이가 예술 해설을 엄선 작성 중..." : "✨ AI 도슨트 스크립트 도록 생성"}
               </button>
