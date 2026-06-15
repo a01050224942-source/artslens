@@ -22,6 +22,19 @@ export default function ArtworkDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
+  // 🎯 [신규 기획]: 도슨트 맞춤 조합 키워드 상태 (다중 선택 가능)
+  const [selectedKeywords, setSelectedKeywords] = useState([]);
+
+  const keywordOptions = [
+    "작품 정보",
+    "작가",
+    "역사 및 사회적 배경",
+    "작품 분석",
+    "의미 해석",
+    "비하인드 스토리",
+    "미술사적 관점"
+  ];
+
   useEffect(() => {
     const fetchArtworkDetail = async () => {
       if (!params.id) return;
@@ -59,6 +72,15 @@ export default function ArtworkDetail() {
       }
     };
   }, []);
+
+  // 키워드 토글 함수
+  const handleToggleKeyword = (keyword) => {
+    if (selectedKeywords.includes(keyword)) {
+      setSelectedKeywords(prev => prev.filter(k => k !== keyword));
+    } else {
+      setSelectedKeywords(prev => [...prev, keyword]);
+    }
+  };
 
   const handleToggleBookmark = async () => {
     if (!user) {
@@ -105,6 +127,7 @@ export default function ArtworkDetail() {
     setIsGenerating(true);
 
     try {
+      // API 라우트로 선택된 키워드 조합 리스트를 함께 전송
       const response = await fetch("/api/docent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,6 +137,7 @@ export default function ArtworkDetail() {
           artist: art.artist || "Unknown Artist",
           year: art.year || "Unknown",
           style: art.style || "European Paintings",
+          selectedKeywords: selectedKeywords // Gemini 프롬프트 조립용 데이터
         }),
       });
 
@@ -204,46 +228,45 @@ export default function ArtworkDetail() {
   if (!art) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
   const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
+  
+  // 로그인한 유저의 이름을 닉네임 형태로 파싱
+  const userName = user ? user.email?.split("@")[0] : "";
 
   return (
-    <main className="min-h-screen bg-[#242629] text-white p-8 relative flex flex-col items-center justify-center overflow-x-hidden">
+    <main className="min-h-screen bg-[#242629] text-white p-6 sm:p-12 relative flex flex-col items-center justify-start overflow-x-hidden">
       
-      {/* 뒤로가기 버튼 */}
-      <div className="w-full max-w-6xl flex justify-start mb-4 relative z-10">
+      {/* 🎯 [수정 포인트 1]: '갤러리로 돌아가기' 버튼 위치 오류 완벽 차단 */}
+      {/* 메인 Flex 구역과 완전히 별개의 Row 영역으로 격리하여 최상단 왼쪽에 항상 정착 */}
+      <div className="w-full max-w-6xl flex justify-start mb-8 border-b border-neutral-800 pb-4">
         <button 
-          onClick={() => router.back()} 
-          className="text-neutral-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1 cursor-pointer"
+          onClick={() => router.push("/")} 
+          className="text-neutral-400 hover:text-white transition-colors text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer group"
         >
-          ← 갤러리로 돌아가기
+          <span className="group-hover:-translate-x-1 transition-transform">←</span> 
+          <span>메인 미술관 갤러리로 돌아가기</span>
         </button>
       </div>
 
-      {/* 메인 컴포넌트 프레임 레이아웃 */}
-      <div className="w-full max-w-6xl flex flex-col md:flex-row items-stretch justify-center gap-12 relative z-10">
+      {/* 메인 2분할 뷰 포트 공간 */}
+      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-12 relative">
         
-        {/* 🖼️ 왼쪽 명화 전용 구역 */}
-        <div className="md:w-1/2 flex flex-col items-center justify-center p-2 relative">
-          
-          {/* 🎯 [대교정 패치]: 스포트라이트의 너비(width)와 투사 각도(clipPath polygon)를 확장하여 
-              메인페이지처럼 작품 전체가 빛의 반경 안에 완벽히 몰입되도록 튜닝 */}
+        {/* 🖼️ 왼쪽: 와이드 스포트라이트 명화 구역 */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-2 relative sticky top-8">
           <div 
-            className="absolute pointer-events-none z-10 opacity-95 transition-all duration-500"
+            className="absolute pointer-events-none z-10 opacity-95"
             style={{
               top: "-160px",
               left: "50%",
               transform: "translateX(-50%)",
-              width: "720px", // 기존 550px에서 720px로 확장하여 와이드 피팅 확보
+              width: "720px",
               height: "760px",
-              // 빛의 그라데이션 시작점을 자연스럽게 늘려 엣지 라인이 잘리지 않게 조정
               backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.24) 0%, rgba(255, 253, 220, 0.06) 60%, transparent 100%)",
-              // polygon 상단 너비를 35% ~ 65%로 벌려 메인 캐러셀과 동일한 정통 원뿔 라인 이식
               clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)"
             }}
           ></div>
 
-          {/* 앤틱 골드 베벨 액자 하드웨어 */}
           <div 
-            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20"
+            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 w-full"
             style={{
               borderImage: "linear-gradient(to bottom right, #dfba73 0%, #cfa862 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
               borderWidth: "14px",
@@ -253,14 +276,14 @@ export default function ArtworkDetail() {
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
-              className="max-h-[550px] w-full object-cover"
+              className="max-h-[580px] w-full object-contain bg-black"
               draggable="false"
             />
           </div>
         </div>
 
-        {/* 📄 오른쪽: 미술관 정품 화이트 설명 패널 스페이스 */}
-        <div className="md:w-1/2 bg-[#fdfcf8] text-[#1c1d1f] p-10 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between border border-[#e5dfcc] relative z-20">
+        {/* 📄 오른쪽: 대리석 화이트 설명 및 컨트롤 패널 */}
+        <div className="w-full lg:w-1/2 bg-[#fdfcf8] text-[#1c1d1f] p-6 sm:p-10 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between border border-[#e5dfcc] relative z-20">
           
           <div>
             <div className="flex justify-between items-start mb-6">
@@ -292,10 +315,41 @@ export default function ArtworkDetail() {
               </h2>
             )}
             
-            <p className="text-md text-[#554e40] mb-8 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
+            <p className="text-md text-[#554e40] mb-6 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
               {art.artist || "Unknown Artist"}, <span className="text-neutral-500 font-sans not-italic font-bold">{art.year}</span>
             </p>
+
+            {/* 🎯 [수정 포인트 3]: 다중 선택 가능한 메인 키워드 조합 인터페이스 칩 배치 구역 */}
+            <div className="mb-6 bg-[#fcfbfa] p-4 rounded-md border border-[#eadabe] shadow-sm">
+              <h4 className="text-xs font-black text-[#665e4e] mb-3 flex items-center gap-1 tracking-wide">
+                <span>🧩</span> 원하는 해설 관점 조합하기 (중복 선택 가능)
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {keywordOptions.map((keyword) => {
+                  const isSelected = selectedKeywords.includes(keyword);
+                  return (
+                    <button
+                      key={keyword}
+                      onClick={() => handleToggleKeyword(keyword)}
+                      className={`text-xs px-3 py-1.5 rounded-md border font-semibold transition-all duration-200 active:scale-95 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#8a6d3b] text-white border-[#70582f] shadow-sm"
+                          : "bg-white text-[#6b624f] border-[#e2dac3] hover:bg-[#f7f5ed]"
+                      }`}
+                    >
+                      {keyword} {isSelected ? "✓" : "+"}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedKeywords.length > 0 && (
+                <p className="text-[11px] text-[#8a6d3b] mt-3 font-medium">
+                  💡 선택된 관점: {selectedKeywords.join(", ")}에 집중하여 고유 가이드를 편찬합니다.
+                </p>
+              )}
+            </div>
             
+            {/* 오디오 가이드 및 스크립트 출력 도록 본문 */}
             <div className="bg-[#f7f5ed] p-6 rounded-lg border border-[#e5dfcc] shadow-inner">
               <h3 className="text-[10px] font-black mb-3 flex items-center tracking-widest text-[#706652]">
                 <span className="bg-[#8a6d3b] text-white text-[9px] font-black px-2 py-0.5 rounded-sm mr-2 tracking-normal">AI DOCENT</span>
@@ -307,6 +361,7 @@ export default function ArtworkDetail() {
             </div>
           </div>
 
+          {/* 하단 유동식 동적 제어 콘솔 시스템 */}
           <div className="mt-8">
             {isDefaultStory ? (
               <button 
@@ -314,10 +369,25 @@ export default function ArtworkDetail() {
                 disabled={isGenerating}
                 className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#87672a] hover:to-[#6b501f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
               >
-                {isGenerating ? "✨ 제미나이가 예술 해설을 엄선 작성 중..." : "✨ AI 도슨트 스크립트 도록 생성"}
+                {/* 🎯 [수정 포인트 2]: 로그인 여부에 따라 완전히 다르게 반응하는 텍스트 바인딩 */}
+                {isGenerating 
+                  ? "✨ 제미나이가 엄선된 키워드를 융합 해설 중..." 
+                  : user 
+                    ? `✨ ${userName}님 맞춤 도슨트 스크립트 생성` 
+                    : "✨ 맞춤 도슨트 스크립트 생성"}
               </button>
             ) : (
               <div className="flex flex-col gap-2">
+                
+                {/* 💡 기생성된 도슨트가 있을 때도 키워드를 바꿔서 재작성하고 싶을 때를 대비한 리빌딩 버튼 링크 제공 */}
+                <button
+                  onClick={handleGenerateDocent}
+                  disabled={isGenerating}
+                  className="w-full mb-2 py-2 border-2 border-dashed border-[#d2c7ac] hover:border-[#8a6d3b] text-[#8a6d3b] hover:bg-[#f7f5ed] rounded-md text-[11px] font-bold transition-all cursor-pointer"
+                >
+                  {isGenerating ? "🔄 해설 갱신 중..." : "🔄 위의 선택한 키워드로 해설 다시 쓰기 (새로 생성)"}
+                </button>
+
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
