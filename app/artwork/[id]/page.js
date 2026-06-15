@@ -210,13 +210,13 @@ export default function ArtworkDetail() {
       
       {/* 🎯 [디자인 변경 1]: 위는 좁고 아래는 넓게 떨어지는 리얼 원뿔형 갤러리 스포트라이트 조명 구현 */}
       <div 
-        className="absolute top-0 left-1/4 sm:left-1/3 w-[350px] sm:w-[450px] h-[650px] pointer-events-none z-0 opacity-80"
-        style={{
-          background: "polygon(50% 0%, 0% 100%, 100% 100%)",
-          backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 230, 0.18) 0%, rgba(255, 253, 230, 0.04) 60%, transparent 100%)",
-          clipPath: "polygon(40% 0, 60% 0, 100% 100%, 0 100%)"
-        }}
-      ></div>
+  className="absolute top-0 left-1/2 -translate-x-1/2 md:left-[25%] md:translate-x-0 w-[450px] sm:w-[550px] h-[750px] pointer-events-none z-0 opacity-90 transition-all duration-500"
+  style={{
+    backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.25) 0%, rgba(255, 253, 220, 0.05) 55%, transparent 100%)",
+    // 모바일에서는 화면 중앙, 데스크톱(md) 이상에서는 왼쪽 명화 박스의 정중앙(50% 0)을 기점으로 원뿔이 퍼지도록 마스크 조정
+    clipPath: "polygon(45% 0, 55% 0, 100% 100%, 0 100%)"
+  }}
+></div>
 
       <div className="w-full max-w-6xl flex justify-start mb-4 relative z-10">
         <button 

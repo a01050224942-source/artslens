@@ -138,12 +138,11 @@ export default function Home() {
   return (
     <div className="bg-[#242629] min-h-screen text-white font-sans scroll-smooth overflow-x-hidden relative">
       
-      {/* 🎯 [디자인 대개편 1]: 스포트라이트 조명을 양옆으로 시원하게 대폭 넓혀 메인 작품 전체를 부드럽게 감싸안음 */}
+      {/* 부드러운 광폭 원뿔형 프리미엄 스포트라이트 조명 오버레이 */}
       <div 
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[850px] h-[650px] pointer-events-none z-10 opacity-95"
         style={{
           backgroundImage: "linear-gradient(to bottom, rgba(255, 253, 220, 0.22) 0%, rgba(255, 253, 220, 0.05) 55%, transparent 100%)",
-          // 폴리곤 마스크 좌표를 조절하여 위는 적당한 빔 형태, 아래는 대폭 와이드하게 확장
           clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)"
         }}
       ></div>
@@ -170,7 +169,8 @@ export default function Home() {
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-5 py-2.5 bg-[#1a1b1d] hover:bg-amber-600 text-white rounded-full border border-neutral-700 transition-all font-bold cursor-pointer">
+              {/* 🎯 [개편 포인트 1]: 우측 상단 로그인 버튼 - 은은한 다크 차콜에 앤틱 황동 골드 테두리 및 텍스트 이식 */}
+              <button className="px-5 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] rounded-full border border-[#a38752]/60 transition-all duration-300 shadow-2xl font-bold tracking-wide cursor-pointer">
                 로그인 / 회원가입
               </button>
             </Link>
@@ -184,12 +184,23 @@ export default function Home() {
           
           <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handleImageChange} />
           
+          {/* 🎯 [개편 포인트 2]: 중앙 카메라 사진인식 버튼 - 보라색 제거 후 월넛 브라운 및 황동 골드 스킨으로 100% 깔맞춤 */}
           <button 
             onClick={handleCameraClick}
             disabled={isIdentifying}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-neutral-800 to-neutral-900 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-full shadow-2xl border border-neutral-700/60 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] font-bold text-xs rounded-full shadow-2xl border border-[#a38752]/60 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2 uppercase tracking-wide"
           >
-            {isIdentifying ? "작품 분석 중..." : "AI 렌즈로 작품 촬영하기"}
+            {isIdentifying ? (
+              "작품 분석 중..."
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-[#e2c184]">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                <span>AI 렌즈로 작품 촬영하기</span>
+              </>
+            )}
           </button>
         </header>
 
@@ -204,8 +215,6 @@ export default function Home() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  // 🎯 [디자인 대개편 2]: rounded-none 적용으로 모서리가 뜨는 현상 100% 차단! 완벽한 직각 액자 구현
-                  // 중후한 골드 리얼 그라데이션 베벨 테두리와 인셋 내부 그림자 장착
                   className={`absolute w-full h-full bg-[#111112] rounded-none overflow-hidden select-none transition-all duration-500 ${
                     isCenter 
                       ? "border-[14px] border-double shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.7)]" 
@@ -219,23 +228,17 @@ export default function Home() {
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
                     
-                    {/* 작품 이미지 영역 */}
                     <div className="w-full h-[73%] overflow-hidden bg-black flex items-center justify-center border-b-2 border-[#2b2110]">
                       <img src={art.imageUrl} alt={art.titleEn} className="w-full h-full object-cover" draggable="false" />
                     </div>
 
-                    {/* 🎯 [디자인 대개편 3]: 가은님이 요청하신 리얼 미술관 '다크 우드 & 골드 레터링 플레이트' 스킨 */}
-                    {/* 저렴해 보였던 흰색 태그를 완전히 파괴하고, 실제 도록 액자 하단의 클래식 네임 라벨 장식 판넬을 고대로 재현 */}
                     <div 
                       className="h-[27%] p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
                       style={{
-                        background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" // 오프라인 중후한 월넛 목재 질감 시각화
+                        background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)"
                       }}
                     >
-                      {/* 미세한 골드 가이드 실선 디테일 */}
                       <div className="absolute inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
-                      
-                      {/* 황동 금속 잉크 느낌의 골드 텍스트 컬러 코디네이션 */}
                       <h3 className="text-[#e2c184] font-black truncate w-full text-xs sm:text-[13px] tracking-tight font-sans relative z-10">
                         {art.titleEn || "Untitled"}
                       </h3>
@@ -280,7 +283,6 @@ export default function Home() {
                 style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}
               >
                 <div className="h-52 overflow-hidden bg-black"><img src={art.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={art.titleEn} /></div>
-                {/* 하단 그리드 카드 명찰도 톤을 완벽 통일하여 프리미엄 아이덴티티 수호 */}
                 <div className="p-5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
                   <h3 className="font-extrabold text-[#e2c184] truncate text-base font-sans">{art.titleEn}</h3>
                   <p className="text-[#a38752] font-serif italic text-xs mt-1 truncate">{art.artist}</p>
