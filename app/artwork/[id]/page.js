@@ -407,7 +407,7 @@ export default function ArtworkDetail() {
                     disabled={isGenerating}
                     className="w-full px-6 py-4 bg-gradient-to-r from-[#8a6d3b] to-[#735a2f] hover:from-[#9c7d46] hover:to-[#856a39] text-white rounded-md font-black text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5 uppercase disabled:opacity-50"
                   >
-                    {isPaused ? "▶️ 도슨트 오디오 가이드 이어서 재생" : "🔊 오디오 가이드 가동 시작"}
+                    {isPaused ? "▶️ 도슨트 오디오 가이드 이어서 재생" : "🔊 오디오 가이드 시작"}
                   </button>
                 ) : (
                   <button 
@@ -423,7 +423,7 @@ export default function ArtworkDetail() {
                     onClick={handleStopTTS}
                     className="text-[11px] text-[#88806f] hover:text-rose-600 transition-all underline mt-3 text-center cursor-pointer tracking-tight font-medium"
                   >
-                    ⏹️ 해설 처음부터 다시 정주행 (처음으로)
+                    ⏹️ 해설 처음부터 다시 듣기
                   </button>
                 )}
               </div>
