@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
-  // 🎯 [모션 복구 핵심]: 데이터 배열을 훼손하지 않고, 인덱스 포인터(숫자)로만 제어하여 CSS Transition을 완전히 살립니다.
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [user, setUser] = useState(null); 
@@ -39,21 +38,26 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // ◀️ 왼쪽 버튼: 숫자를 감소시키되, 0보다 작아지면 맨 끝 배열로 부드럽게 순환
+  const handleOriginalPrev = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : artworks.length - 1));
+  };
+
+  const handleOriginalNext = () => {
+    setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
+  };
+
   const handlePrev = () => {
     if (artworks.length === 0) return;
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : artworks.length - 1));
   };
 
-  // ▶️ 오른쪽 버튼: 숫자를 증가시키되, 배열 길이를 넘어서면 다시 0번으로 부드럽게 순환
   const handleNext = () => {
     if (artworks.length === 0) return;
     setCurrentIndex((prev) => (prev < artworks.length - 1 ? prev + 1 : 0));
   };
 
-  // 🎯 [클릭 이동 완벽 복구]: 양옆 카드를 누르면 중앙과의 거리만큼 인덱스를 조절하여 스르륵 회전 모션 발동
   const handleCardClick = (index, isCenter) => {
-    if (isCenter) return; // 이미 가운데 있다면 Link 컴포넌트가 작동해 상세페이지로 진입합니다.
+    if (isCenter) return; 
     setCurrentIndex(index);
   };
 
@@ -112,19 +116,16 @@ export default function Home() {
     }
   };
 
-  // 🎯 [수학적 모듈러 무한 3D 연산]: 데이터 파괴 없이 링 구조로 앞뒤 카드를 무한 스캔하는 알고리즘
   const getCardStyle = (index) => {
     let offset = index - currentIndex;
     const halfLength = Math.floor(artworks.length / 2);
 
-    // 💡 핵심: 원형 서클 궤도를 돌리듯 앞뒤 경계선에서 인덱스를 밀고 당겨 양옆이 절대 비어 보이지 않게 만듭니다.
     if (offset > halfLength) offset -= artworks.length;
     if (offset < -halfLength) offset += artworks.length;
 
     const absOffset = Math.abs(offset);
     const sign = Math.sign(offset);
 
-    // 내 시야 좌우로 2단계를 벗어난 카드들은 부드럽게 숨겨서 최적화합니다.
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
     const translateX = offset * 115; 
@@ -134,37 +135,50 @@ export default function Home() {
     return {
       transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg)`,
       zIndex: 10 - absOffset,
-      opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.6 : 0.2,
-      filter: absOffset === 0 ? 'none' : 'blur(1.5px)',
-      // ✨ 이 cubic-bezier 모션 공식이 가은님이 좋아하시던 그 '스르륵' 감성 모션의 핵심 비밀기지입니다!
+      // 🎯 비중앙 카드들은 갤러리 조명 밖그늘 느낌이 나도록 opacity와 필터를 살짝 조절
+      opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.5 : 0.15,
+      filter: absOffset === 0 ? 'none' : 'blur(2px) brightness(0.6)',
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
     };
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">미술관 입장 중...</div>;
+  if (loading) return <div className="min-h-screen bg-[#2e3136] flex items-center justify-center text-white font-medium">미술관 도슨트 매칭 중...</div>;
 
   return (
-    <div className="bg-gray-900 min-h-screen text-white font-sans scroll-smooth overflow-x-hidden">
+    // 🎯 [디자인 대개편 1]: 배경색을 차가운 다크블랙에서 오프라인 전시실 감성의 고급스러운 웜 미디엄 그레이(#242629) 톤으로 전격 전향
+    <div className="bg-[#242629] min-h-screen text-white font-sans scroll-smooth overflow-x-hidden relative">
       
+      {/* 🎯 [디자인 대개편 2]: 중앙 명화를 스포트라이트 조명이 우아하게 내리쬐는 가상 그래디언트 오버레이 스킨 장착 */}
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[550px] pointer-events-none z-10"
+        style={{
+          background: "radial-gradient(circle at top center, rgba(255, 254, 240, 0.15) 0%, rgba(255, 254, 240, 0.05) 40%, transparent 70%)",
+        }}
+      ></div>
+
       {/* SECTION 1: 3D Hero Carousel */}
       <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
-        {/* 상단 우측 고정 유저 마이페이지 칩 */}
+        {/* 우측 상단 고정 유저 보관함 칩 */}
         <div className="fixed top-6 right-6 z-50 text-xs font-medium">
           {user ? (
-            <div className="flex items-center gap-3 bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700 shadow-2xl">
+            <div className="flex items-center gap-3 bg-[#1a1b1d]/90 backdrop-blur-md px-4 py-2 rounded-full border border-neutral-700 shadow-2xl">
               <button 
                 onClick={() => router.push("/mypage")}
-                className="text-blue-400 font-extrabold hover:text-blue-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                className="text-amber-400 font-extrabold hover:text-amber-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
               >
-                👤 <u>{user.email?.split("@")[0]}</u>님
+                <span>👤</span>
+                <span className="underline decoration-dashed decoration-amber-500 underline-offset-4">
+                  {user.email?.split("@")[0]}
+                </span>
+                <span className="text-gray-400 font-normal text-[11px]"> 님</span>
               </button>
-              <span className="text-gray-700">|</span>
+              <span className="text-neutral-700">|</span>
               <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors cursor-pointer">로그아웃</button>
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-5 py-2.5 bg-gray-800 hover:bg-indigo-600 text-white rounded-full border border-gray-700 transition-all font-bold cursor-pointer">
+              <button className="px-5 py-2.5 bg-[#1a1b1d] hover:bg-amber-600 text-white rounded-full border border-neutral-700 transition-all font-bold cursor-pointer">
                 로그인 / 회원가입
               </button>
             </Link>
@@ -173,15 +187,16 @@ export default function Home() {
 
         {/* 타이틀 헤더 */}
         <header className="relative mt-2 text-center z-20 flex flex-col items-center">
-          <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">ArtLens</h1>
-          <p className="text-gray-500 text-sm mb-4">시각 지능으로 경험하는 새로운 미학</p>
+          <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">ArtLens</h1>
+          <p className="text-neutral-400 text-sm mb-4 font-medium tracking-wide">시각 지능으로 경험하는 새로운 미학</p>
           
           <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handleImageChange} />
           
           <button 
             onClick={handleCameraClick}
             disabled={isIdentifying}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-full shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2"
+            // 🎯 조명 톤에 맞춰 버튼 스킨도 앤틱 퍼플/블랙 그라데이션으로 매칭 변경
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-neutral-800 to-neutral-900 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-full shadow-2xl border border-neutral-700/60 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2"
           >
             {isIdentifying ? "작품 분석 중..." : "AI 렌즈로 작품 촬영하기"}
           </button>
@@ -190,7 +205,7 @@ export default function Home() {
         {/* 3D 부드러운 무한 캐러셀 스페이스 */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
-            className="relative w-[300px] h-[340px] sm:w-[340px] sm:h-[410px] flex items-center justify-center"
+            className="relative w-[300px] h-[350px] sm:w-[340px] sm:h-[420px] flex items-center justify-center"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
@@ -198,16 +213,29 @@ export default function Home() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  className="absolute w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 select-none"
-                  style={getCardStyle(index)}
-                  // 🎯 [클릭 이동 핸들러 완벽 복원 연동]
+                  // 🎯 [디자인 대개편 3]: 가은님이 요청하신 고급 '금색 미술관 액자 프레임(Gold Frame)' 레이어 구현
+                  // 중후한 골드 그라데이션 테두리(border)와 내부 그림자 입체 인셋(shadow-inner) 처리
+                  className={`absolute w-full h-full bg-[#1a1b1d] rounded-sm overflow-hidden select-none transition-shadow duration-500 ${
+                    isCenter 
+                      ? "border-[12px] border-double border-gradient shadow-[0_25px_60px_rgba(0,0,0,0.8),inset_0_0_10px_rgba(0,0,0,0.6)]" 
+                      : "border-[10px] border-solid shadow-[0_15px_30px_rgba(0,0,0,0.6)]"
+                  }`}
+                  style={{
+                    ...getCardStyle(index),
+                    borderImage: "linear-gradient(to bottom right, #dfba73 0%, #c5a059 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 12",
+                    borderRadius: "4px"
+                  }}
                   onClick={() => handleCardClick(index, isCenter)}
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                    <img src={art.imageUrl} alt={art.titleEn} className="w-full h-3/4 object-cover" draggable="false" />
-                    <div className="h-1/4 p-4 bg-white flex flex-col justify-center">
-                      <h3 className="text-gray-900 font-bold truncate text-xs sm:text-sm">{art.titleEn || "Untitled"}</h3>
-                      <p className="text-gray-400 font-serif italic text-[11px] truncate mt-0.5">{art.artist || "Unknown Artist"}</p>
+                    {/* 명화 본체 렌더링 */}
+                    <div className="w-full h-3/4 overflow-hidden bg-black flex items-center justify-center border-b-[3px] border-[#3a301a]">
+                      <img src={art.imageUrl} alt={art.titleEn} className="w-full h-full object-cover" draggable="false" />
+                    </div>
+                    {/* 하단 미술관 정품 네임 플레이트(라벨 태그) 스타일링 */}
+                    <div className="h-1/4 p-4 bg-[#fdfcf7] flex flex-col justify-center border-t border-[#d4cbb3]">
+                      <h3 className="text-[#1c1d1f] font-black truncate text-xs sm:text-sm tracking-tight font-sans">{art.titleEn || "Untitled"}</h3>
+                      <p className="text-[#685f4c] font-serif italic text-[11px] truncate mt-0.5">{art.artist || "Unknown Artist"}</p>
                     </div>
                   </Link>
                 </div>
@@ -219,33 +247,37 @@ export default function Home() {
         {/* 하단 제어 컨트롤러 패널 */}
         <div className="w-full flex flex-col items-center z-20">
           <div className="flex gap-12 mb-4">
-            <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
-            <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-gray-800 border border-gray-700 hover:border-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
+            <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
+            <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
           </div>
 
           <button 
             onClick={scrollToGrid}
-            className="animate-bounce text-gray-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2"
+            className="animate-bounce text-neutral-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2 font-medium"
           >
             전체 컬렉션 보기 ↓
           </button>
         </div>
 
-        {/* 완벽 밀착 바닥 흰색 구분선 */}
-        <div className="absolute bottom-0 left-0 w-full border-t border-gray-800/80"></div>
+        {/* 완벽 밀착 바닥 구분선 (전시실 바닥 마감재 느낌으로 딥한 명도 지정) */}
+        <div className="absolute bottom-0 left-0 w-full border-t border-[#1a1b1d]"></div>
       </section>
 
       {/* SECTION 2: 전체 그리드 영역 */}
-      <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-10 border-b border-gray-800 pb-4 tracking-tight">Collection</h2>
+      <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto relative z-20">
+        <h2 className="text-3xl font-bold mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {artworks.map((art) => (
             <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`}>
-              <div className="group bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-indigo-500 transition-all shadow-lg hover:shadow-2xl">
-                <div className="h-52 overflow-hidden"><img src={art.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={art.titleEn} /></div>
-                <div className="p-5">
-                  <h3 className="font-bold text-white truncate text-base">{art.titleEn}</h3>
-                  <p className="text-gray-400 font-serif italic text-xs mt-1 truncate">{art.artist}</p>
+              {/* 그리드 카드 역시 연한 골드 프레임 테두리로 고급감 스케일 정렬 */}
+              <div 
+                className="group bg-[#1a1b1d] border-2 rounded-lg overflow-hidden transition-all shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 duration-300"
+                style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}
+              >
+                <div className="h-52 overflow-hidden bg-black"><img src={art.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={art.titleEn} /></div>
+                <div className="p-5 bg-[#fdfcf7]">
+                  <h3 className="font-extrabold text-[#1c1d1f] truncate text-base font-sans">{art.titleEn}</h3>
+                  <p className="text-[#685f4c] font-serif italic text-xs mt-1 truncate">{art.artist}</p>
                 </div>
               </div>
             </Link>
@@ -253,7 +285,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-12 text-center text-gray-600 border-t border-gray-800 text-[10px] font-mono">
+      <footer className="py-12 text-center text-neutral-600 border-t border-neutral-800 text-[10px] font-mono">
         <p>© 2026 ArtLens Project. MET Museum Open Access API.</p>
       </footer>
     </div>
