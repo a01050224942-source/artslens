@@ -122,9 +122,23 @@ export default function ArtworkDetail() {
     }
   };
 
+  // 🎯 [대교정 핵심 패치]: 새 해설 생성 시 프론트엔드 상태창을 완전히 클리어하는 로직 빌드
   const handleGenerateDocent = async () => {
     if (!art) return;
     setIsGenerating(true);
+
+    // 💡 재생 중이던 TTS가 있다면 즉시 중단하여 꼬임 방지
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+    }
+
+    // 💡 화면 텍스트 상태를 로딩 안내 멘트로 선제적 강제 전환 (렌더링 트리거 활성화)
+    setArt((prev) => ({
+      ...prev,
+      docentStory: "⏳ 선택하신 키워드를 기반으로 완전히 새로운 AI 맞춤 도슨트 해설을 편찬하고 있습니다. 잠시만 기다려 주세요..."
+    }));
 
     try {
       const response = await fetch("/api/docent", {
@@ -160,6 +174,10 @@ export default function ArtworkDetail() {
     } catch (error) {
       console.error("Gemini 호출 에러:", error);
       alert("해설을 생성하지 못했습니다.");
+      // 에러 발생 시 기존 데이터 복구
+      const docRef = doc(db, "artworks", params.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) setArt(docSnap.data());
     } finally {
       setIsGenerating(false);
     }
@@ -226,6 +244,7 @@ export default function ArtworkDetail() {
   if (loading) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white font-medium">작품 정보를 불러오는 중입니다...</div>;
   if (!art) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
+  // 순정 디폴트 멘트인지 확인하는 판별식
   const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
   const userName = user ? user.email?.split("@")[0] : "";
 
@@ -247,10 +266,7 @@ export default function ArtworkDetail() {
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center lg:items-start justify-center gap-12 relative">
         
         {/* 🖼️ 왼쪽: 와이드 스포트라이트 명화 구역 */}
-        {/* 🎯 [대교정 포인트] 컨테이너에 h-fit과 max-h-[70vh] 연동을 주어 액자틀 전체가 화면 높이를 안 넘게 홀딩 */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-2 relative sticky top-8 max-h-[70vh] h-fit">
-          
-          {/* 광폭 원뿔형 스포트라이트 */}
           <div 
             className="absolute pointer-events-none z-10 opacity-95"
             style={{
@@ -264,7 +280,6 @@ export default function ArtworkDetail() {
             }}
           ></div>
 
-          {/* 🎯 [대교정 포인트] 액자 프레임 자체에 max-h-[70vh]와 w-auto를 부여해 가변 축소 강제 */}
           <div 
             className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 max-h-[70vh] w-auto h-fit flex items-center justify-center"
             style={{
@@ -273,8 +288,6 @@ export default function ArtworkDetail() {
               borderStyle: "solid",
             }}
           >
-            {/* 🎯 이미지에도 max-h-[calc(70vh-28px)]를 주어 액자 테두리 두께(28px)를 제외한 높이에 완벽 매칭 */}
-            {/* object-contain과 h-full w-auto 조합으로 이미지 비율에 액자가 칼같이 밀착하면서 화면에 압축 보관됨 */}
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
@@ -324,7 +337,7 @@ export default function ArtworkDetail() {
             {/* 다중 선택 가능한 메인 키워드 조합 인터페이스 칩 배치 구역 */}
             <div className="mb-6 bg-[#fcfbfa] p-4 rounded-md border border-[#eadabe] shadow-sm">
               <h4 className="text-xs font-black text-[#665e4e] mb-3 flex items-center gap-1 tracking-wide">
-                <span>🧩</span> 원하는 해설 관점 조합하기
+                <span>🧩</span> 원하는 해설 관점 조합하기 
               </h4>
               <div className="flex flex-wrap gap-2">
                 {keywordOptions.map((keyword) => {
@@ -357,7 +370,7 @@ export default function ArtworkDetail() {
                 <span className="bg-[#8a6d3b] text-white text-[9px] font-black px-2 py-0.5 rounded-sm mr-2 tracking-normal">AI DOCENT</span>
                 AUDIO GUIDE SCRIPT
               </h3>
-              <p className={`leading-relaxed text-sm font-sans ${isDefaultStory ? "text-neutral-400 italic" : "text-[#2e2b24] font-normal"}`}>
+              <p className="leading-relaxed text-sm font-sans text-[#2e2b24] font-normal whitespace-pre-wrap">
                 {art.docentStory}
               </p>
             </div>
@@ -379,10 +392,11 @@ export default function ArtworkDetail() {
               </button>
             ) : (
               <div className="flex flex-col gap-2">
+                {/* 🎯 [대교정 포인트]: 다시 쓰기 단추를 누르는 즉시 상태값을 비워 시각적 피드백을 동기화함 */}
                 <button
                   onClick={handleGenerateDocent}
                   disabled={isGenerating}
-                  className="w-full mb-2 py-2 border-2 border-dashed border-[#d2c7ac] hover:border-[#8a6d3b] text-[#8a6d3b] hover:bg-[#f7f5ed] rounded-md text-[11px] font-bold transition-all cursor-pointer"
+                  className="w-full mb-2 py-3 bg-[#1a1b1d] hover:bg-neutral-800 text-[#e2c184] font-bold rounded-md text-xs transition-all border border-neutral-700 shadow-md active:scale-95 disabled:opacity-40 cursor-pointer"
                 >
                   {isGenerating ? "🔄 해설 갱신 중..." : "🔄 위의 선택한 키워드로 해설 다시 쓰기 (새로 생성)"}
                 </button>
@@ -390,7 +404,8 @@ export default function ArtworkDetail() {
                 {!isSpeaking || isPaused ? (
                   <button 
                     onClick={handlePlayTTS}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-[#8a6d3b] to-[#735a2f] hover:from-[#9c7d46] hover:to-[#856a39] text-white rounded-md font-black text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+                    disabled={isGenerating}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-[#8a6d3b] to-[#735a2f] hover:from-[#9c7d46] hover:to-[#856a39] text-white rounded-md font-black text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-1.5 uppercase disabled:opacity-50"
                   >
                     {isPaused ? "▶️ 도슨트 오디오 가이드 이어서 재생" : "🔊 오디오 가이드 가동 시작"}
                   </button>
