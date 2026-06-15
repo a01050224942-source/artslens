@@ -13,6 +13,7 @@ export default function MainDashboard() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [user, setUser] = useState(null); 
+  const [windowWidth, setWindowWidth] = useState(1200); // 📱 초기 하이드레이션 방어용 너비 세팅
   
   const gridRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -34,6 +35,17 @@ export default function MainDashboard() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
+
+    // 📱 모바일 브라우저 진입 런타임 시점에 실시간 안전 너비 확보
+    if (typeof window !== "undefined") {
+      setWindowWidth(window.innerWidth);
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener("resize", handleResize);
+      return () => {
+        unsubscribe();
+        window.removeEventListener("resize", handleResize);
+      };
+    }
 
     return () => unsubscribe();
   }, []);
@@ -108,6 +120,8 @@ export default function MainDashboard() {
     }
   };
 
+  // 🎯 [대교정 포인트]: 꼬이던 <style jsx> 수식을 파괴하고 인라인 React 스타일로 수치 강제 주입!
+  // 모바일 해상도(640px 미만)일 때와 PC일 때의 이동 간격 팩터를 확실하게 분기 연산합니다.
   const getCardStyle = (index) => {
     let offset = index - currentIndex;
     const halfLength = Math.floor(artworks.length / 2);
@@ -120,11 +134,18 @@ export default function MainDashboard() {
 
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
+    const isMobile = windowWidth < 640;
+    
+    // 📱 모바일은 가로 간격을 68%로 타이트하게 조이고, 💻 PC는 기존 황금 비율인 115% 구도를 복제 유지합니다.
+    const translateX = offset * (isMobile ? 68 : 115);
+    const translateZ = absOffset * (isMobile ? -120 : -180);
+    const rotateY = sign * (isMobile ? -30 : -35);
+
     return {
-      "--offset": offset,
-      "--abs-offset": absOffset,
-      "--sign": sign,
+      transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg)`,
       zIndex: 10 - absOffset,
+      opacity: absOffset === 0 ? 1 : absOffset === 1 ? 0.45 : 0.12,
+      filter: absOffset === 0 ? 'none' : `blur(${isMobile ? 1 : 2}px) brightness(0.55)`,
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
     };
   };
@@ -191,7 +212,7 @@ export default function MainDashboard() {
         {/* 3D 가변 비율 액자 캐러셀 구역 */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
-            className="relative w-[230px] sm:w-[340px] flex items-center justify-center h-[340px] sm:h-[450px]"
+            className="relative w-[220px] sm:w-[340px] flex items-center justify-center h-[300px] sm:h-[450px]"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
@@ -199,47 +220,40 @@ export default function MainDashboard() {
               return (
                 <div 
                   key={`${art.id}-${index}`}
-                  className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none card-3d-layer ${
+                  className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none ${
                     isCenter 
-                      ? "border-[8px] sm:border-[14px] border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)] opacity-100 filter-none" 
-                      : "border-[5px] sm:border-[10px] border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)] opacity-40 hover:opacity-60"
+                      ? "border-[8px] sm:border-[14px] border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)]" 
+                      : "border-[5px] sm:border-[10px] border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)]"
                   }`}
-                  style={{
-                    ...getCardStyle(index),
-                    borderImage: "linear-gradient(to bottom right, #e5c483 0%, #cfa862 20%, #87672a 40%, #bc954f 60%, #a37d37 80%, #fcebc2 100%) 14",
-                  }}
+                  style={getCardStyle(index)}
                   onClick={() => handleCardClick(index, isCenter)}
                 >
-                  <style jsx>{`
-                    .card-3d-layer {
-                      transform: translateX(calc(var(--offset) * 68%)) translateZ(calc(var(--abs-offset) * -120px)) rotateY(calc(var(--sign) * -30deg));
-                      filter: var(--abs-offset) === 0 ? none : blur(1px) brightness(0.6);
-                    }
-                    @media (min-width: 640px) {
-                      .card-3d-layer {
-                        transform: translateX(calc(var(--offset) * 115%)) translateZ(calc(var(--abs-offset) * -180px)) rotateY(calc(var(--sign) * -35deg));
-                        filter: var(--abs-offset) === 0 ? none : blur(2px) brightness(0.55);
-                      }
-                    }
-                  `}</style>
-                  
-                  <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                    <div className="w-full h-auto bg-black border-b border-[#2b2110]">
-                      <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto object-contain block" draggable="false" />
-                    </div>
-                    <div 
-                      className="w-full p-2.5 sm:p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
-                      style={{ background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" }}
-                    >
-                      <div className="absolute inset-1 sm:inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
-                      <h3 className="text-[#e2c184] font-black truncate w-full text-[11px] sm:text-[13px] tracking-tight font-sans relative z-10">
-                        {art.titleEn || "Untitled"}
-                      </h3>
-                      <p className="text-[#a38752] font-serif italic text-[9px] sm:text-[11px] truncate w-full mt-0.5 relative z-10">
-                        by {art.artist || "Unknown Artist"}
-                      </p>
-                    </div>
-                  </Link>
+                  {/* 프레임 보더 마스크 매핑 */}
+                  <div 
+                    className="w-full h-full border-solid"
+                    style={{
+                      borderImage: "linear-gradient(to bottom right, #e5c483 0%, #cfa862 20%, #87672a 40%, #bc954f 60%, #a37d37 80%, #fcebc2 100%) 14",
+                      borderWidth: windowWidth < 640 ? "6px" : "12px",
+                    }}
+                  >
+                    <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
+                      <div className="w-full h-auto bg-black border-b border-[#2b2110]">
+                        <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto object-contain block" draggable="false" />
+                      </div>
+                      <div 
+                        className="w-full p-2 sm:p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
+                        style={{ background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" }}
+                      >
+                        <div className="absolute inset-1 sm:inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
+                        <h3 className="text-[#e2c184] font-black truncate w-full text-[11px] sm:text-[13px] tracking-tight font-sans relative z-10">
+                          {art.titleEn || "Untitled"}
+                        </h3>
+                        <p className="text-[#a38752] font-serif italic text-[9px] sm:text-[11px] truncate w-full mt-0.5 relative z-10">
+                          by {art.artist || "Unknown Artist"}
+                        </p>
+                      </div>
+                    </Link>
+                  </div>
                 </div>
               );
             })}
