@@ -244,11 +244,11 @@ export default function ArtworkDetail() {
       </div>
 
       {/* 메인 2분할 뷰 포트 공간 */}
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-12 relative">
+      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center lg:items-start justify-center gap-12 relative">
         
         {/* 🖼️ 왼쪽: 와이드 스포트라이트 명화 구역 */}
-        {/* max-w-[480px] 등으로 적정 크기 캡슐화를 주어 세로로 너무 거대해지는 것을 방지 */}
-        <div className="w-full lg:w-1/2 max-w-[480px] mx-auto lg:mx-0 flex flex-col items-center justify-center p-2 relative sticky top-8">
+        {/* 🎯 [대교정 포인트] 컨테이너에 h-fit과 max-h-[70vh] 연동을 주어 액자틀 전체가 화면 높이를 안 넘게 홀딩 */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-2 relative sticky top-8 max-h-[70vh] h-fit">
           
           {/* 광폭 원뿔형 스포트라이트 */}
           <div 
@@ -264,21 +264,21 @@ export default function ArtworkDetail() {
             }}
           ></div>
 
-          {/* 🎯 [대개편 핵심 패치]: 고정 높이 틀을 완전히 파괴하고 h-fit으로 가변 대응 */}
+          {/* 🎯 [대교정 포인트] 액자 프레임 자체에 max-h-[70vh]와 w-auto를 부여해 가변 축소 강제 */}
           <div 
-            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 w-full h-fit"
+            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 max-h-[70vh] w-auto h-fit flex items-center justify-center"
             style={{
               borderImage: "linear-gradient(to bottom right, #dfba73 0%, #cfa862 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
               borderWidth: "14px",
               borderStyle: "solid",
             }}
           >
-            {/* 🎯 강제 세로 크롭인 max-h와 object-cover를 완전히 빼버림 */}
-            {/* w-full h-auto block object-contain 조합으로 이미지가 잘리지 않고, 액자가 이미지 크기에 기가 막히게 밀착함 */}
+            {/* 🎯 이미지에도 max-h-[calc(70vh-28px)]를 주어 액자 테두리 두께(28px)를 제외한 높이에 완벽 매칭 */}
+            {/* object-contain과 h-full w-auto 조합으로 이미지 비율에 액자가 칼같이 밀착하면서 화면에 압축 보관됨 */}
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
-              className="w-full h-auto block object-contain"
+              className="max-h-[calc(70vh-28px)] w-auto h-full block object-contain"
               draggable="false"
             />
           </div>
@@ -346,7 +346,7 @@ export default function ArtworkDetail() {
               </div>
               {selectedKeywords.length > 0 && (
                 <p className="text-[11px] text-[#8a6d3b] mt-3 font-medium">
-                  💡 선택된 관점: {selectedKeywords.join(", ")}에 집중하여 고유 가이드를 작성합니다.
+                  💡 선택된 관점: {selectedKeywords.join(", ")}
                 </p>
               )}
             </div>
