@@ -13,6 +13,7 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [user, setUser] = useState(null); 
+  const [isMobile, setIsMobile] = useState(false); // 📱 모바일 화면 감지 상태 추가
   
   const gridRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -35,7 +36,17 @@ export default function Home() {
       setUser(currentUser);
     });
 
-    return () => unsubscribe();
+    // 화면 크기 체크 트리거 가동
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   const handlePrev = () => {
@@ -120,8 +131,9 @@ export default function Home() {
 
     if (absOffset > 2) return { opacity: 0, pointerEvents: 'none', zIndex: -1 };
 
-    const translateX = offset * 120; 
-    const translateZ = absOffset * -190; 
+    // 🎯 [대교정 패치]: 폰화면(isMobile)일 때는 시야각 축소 계산 적용하여 화면 이탈 완벽 방지
+    const translateX = offset * (isMobile ? 75 : 120); 
+    const translateZ = absOffset * (isMobile ? -130 : -190); 
     const rotateY = sign * -35; 
 
     return {
@@ -147,19 +159,19 @@ export default function Home() {
         }}
       ></div>
 
-      {/* SECTION 1: 3D Hero Carousel (크기 및 레이아웃 100% 유지) */}
-      <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
+      {/* SECTION 1: 3D Hero Carousel */}
+      <section className="h-screen w-full flex flex-col justify-between relative p-4 sm:p-8 pb-4">
         
-        {/* 상단 우측 내비게이션 콘솔 */}
-        <div className="fixed top-6 right-6 z-50 text-xs font-medium">
+        {/* 상단 우측 내비게이션 콘솔 (모바일 마진 최적화) */}
+        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 text-xs font-medium">
           {user ? (
-            <div className="flex items-center gap-3 bg-[#1a1b1d]/90 backdrop-blur-md px-4 py-2 rounded-full border border-neutral-700 shadow-2xl">
+            <div className="flex items-center gap-2 sm:gap-3 bg-[#1a1b1d]/90 backdrop-blur-md px-3 sm:px-4 py-2 rounded-full border border-neutral-700 shadow-2xl">
               <button 
                 onClick={() => router.push("/mypage")}
                 className="text-amber-400 font-extrabold hover:text-amber-300 tracking-tight active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
               >
                 <span>👤</span>
-                <span className="underline decoration-dashed decoration-amber-500 underline-offset-4">
+                <span className="underline decoration-dashed decoration-amber-500 underline-offset-4 max-w-[70px] truncate sm:max-w-none">
                   {user.email?.split("@")[0]}
                 </span>
                 <span className="text-gray-400 font-normal text-[11px]"> 님</span>
@@ -169,7 +181,7 @@ export default function Home() {
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-5 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] rounded-full border border-[#a38752]/60 transition-all duration-300 shadow-2xl font-bold tracking-wide cursor-pointer">
+              <button className="px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] text-[11px] sm:text-xs rounded-full border border-[#a38752]/60 transition-all duration-300 shadow-2xl font-bold tracking-wide cursor-pointer">
                 로그인 / 회원가입
               </button>
             </Link>
@@ -177,25 +189,25 @@ export default function Home() {
         </div>
 
         {/* 타이틀 헤더 */}
-        <header className="relative mt-2 text-center z-20 flex flex-col items-center">
-          <h1 className="text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">ArtLens</h1>
-          <p className="text-neutral-400 text-sm mb-4 font-medium tracking-wide">시각 지능으로 경험하는 새로운 미학</p>
+        <header className="relative mt-12 sm:mt-2 text-center z-20 flex flex-col items-center">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter mb-1 bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">ArtLens</h1>
+          <p className="text-neutral-400 text-[11px] sm:text-sm mb-4 font-medium tracking-wide">시각 지능으로 경험하는 새로운 미학</p>
           
           <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handleImageChange} />
           
           <button 
             onClick={handleCameraClick}
             disabled={isIdentifying}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] font-bold text-xs rounded-full shadow-2xl border border-[#a38752]/60 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2 uppercase tracking-wide"
+            className="flex items-center gap-2 px-5 py-2 sm:px-6 sm:py-2.5 bg-gradient-to-r from-[#2c2214] to-[#1c150c] hover:from-[#87672a] hover:to-[#6b501f] text-[#e2c184] font-bold text-[11px] sm:text-xs rounded-full shadow-2xl border border-[#a38752]/60 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer mb-2 uppercase tracking-wide"
           >
             {isIdentifying ? "작품 분석 중..." : "AI 렌즈로 작품 촬영하기"}
           </button>
         </header>
 
-        {/* 3D 가변 비율 액자 캐러셀 */}
+        {/* 3D 가변 비율 액자 캐러셀 (모바일 크기 유동식 바인딩) */}
         <div className="flex-grow flex items-center justify-center my-2">
           <div 
-            className="relative w-[310px] sm:w-[350px] flex items-center justify-center"
+            className="relative w-[240px] sm:w-[350px] flex items-center justify-center"
             style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
           >
             {artworks.map((art, index) => {
@@ -205,8 +217,8 @@ export default function Home() {
                   key={`${art.id}-${index}`}
                   className={`absolute w-full h-fit bg-[#111112] rounded-none overflow-hidden select-none transition-all duration-500 ${
                     isCenter 
-                      ? "border-[14px] border-double shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.7)]" 
-                      : "border-[10px] border-solid shadow-[0_20px_40px_rgba(0,0,0,0.65)]"
+                      ? "border-[8px] sm:border-[14px] border-double shadow-[0_20px_50px_rgba(0,0,0,0.85)]" 
+                      : "border-[5px] sm:border-[10px] border-solid shadow-[0_10px_25px_rgba(0,0,0,0.65)]"
                   }`}
                   style={{
                     ...getCardStyle(index),
@@ -215,18 +227,18 @@ export default function Home() {
                   onClick={() => handleCardClick(index, isCenter)}
                 >
                   <Link href={isCenter ? `/artwork/${art.id}` : '#'} className="block w-full h-full" onClick={(e) => !isCenter && e.preventDefault()}>
-                    <div className="w-full h-auto bg-black border-b-2 border-[#2b2110]">
+                    <div className="w-full h-auto bg-black border-b border-[#2b2110]">
                       <img src={art.imageUrl} alt={art.titleEn} className="w-full h-auto object-contain block" draggable="false" />
                     </div>
                     <div 
-                      className="w-full p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
+                      className="w-full p-2.5 sm:p-4 flex flex-col justify-center items-center text-center border-t border-[#46391e] relative shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
                       style={{ background: "linear-gradient(to bottom, #2c2214 0%, #1c150c 100%)" }}
                     >
-                      <div className="absolute inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
-                      <h3 className="text-[#e2c184] font-black truncate w-full text-xs sm:text-[13px] tracking-tight font-sans relative z-10">
+                      <div className="absolute inset-1 sm:inset-2 border border-[#8a6d3b]/30 pointer-events-none"></div>
+                      <h3 className="text-[#e2c184] font-black truncate w-full text-[11px] sm:text-[13px] tracking-tight font-sans relative z-10">
                         {art.titleEn || "Untitled"}
                       </h3>
-                      <p className="text-[#a38752] font-serif italic text-[10px] sm:text-[11px] truncate w-full mt-1 relative z-10">
+                      <p className="text-[#a38752] font-serif italic text-[9px] sm:text-[11px] truncate w-full mt-0.5 relative z-10">
                         by {art.artist || "Unknown Artist"}
                       </p>
                     </div>
@@ -239,13 +251,13 @@ export default function Home() {
 
         {/* 하단 제어 화살표 콘솔 */}
         <div className="w-full flex flex-col items-center z-20">
-          <div className="flex gap-12 mb-4">
-            <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
-            <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
+          <div className="flex gap-8 sm:gap-12 mb-2 sm:mb-4">
+            <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-sm sm:text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
+            <button onClick={handleNext} className="hover:scale-110 active:scale-95 text-sm sm:text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">→</button>
           </div>
           <button 
             onClick={scrollToGrid}
-            className="animate-bounce text-neutral-500 text-[10px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2 font-medium"
+            className="animate-bounce text-neutral-500 text-[9px] flex flex-col items-center tracking-widest cursor-pointer hover:text-white transition-colors mb-2 font-medium"
           >
             전체 컬렉션 보기 ↓
           </button>
@@ -253,27 +265,26 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 w-full border-t border-[#1a1b1d]"></div>
       </section>
 
-      {/* 🎯 [대교정 포인트]: 가은님이 요청하신 단독 75% 스케일 뷰포트 압축 매커니즘 구현 */}
-      {/* 1. 최대 가로 제한을 max-w-5xl(약 1024px)로 대폭 축소하여 양옆으로 과도하게 펴지는 것을 물리적으로 락인 */}
-      {/* 2. 한 줄에 무조건 4개 기둥이 서도록 'sm:columns-2 md:columns-3 lg:columns-4' 구조로 고정 (xl 이상에서도 4개 유지) */}
-      {/* 3. 카드 사이 여백을 gap-6, space-y-6으로 콤팩트하게 다듬어 75% 줌 아웃 느낌 구현 */}
-      <section ref={gridRef} className="py-24 px-8 max-w-5xl mx-auto relative z-20">
-        <h2 className="text-3xl font-bold mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
+      {/* 하단 전체 컬렉션 메이슨리 구역 */}
+      <section ref={gridRef} className="py-12 sm:py-24 px-4 sm:px-8 max-w-5xl mx-auto relative z-20">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
         
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+        {/* 🎯 [대교정 포인트]: 모바일 너비에서 무조건 한 줄에 2개 기둥이 서도록 'columns-2' 고정 배정! */}
+        {/* 카드 사이 마진도 모바일에서는 gap-4, space-y-4로 슬림하게 픽스하여 PC 스타일 밀도 완벽 이식 */}
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6">
           {artworks.map((art) => (
             <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`} className="block break-inside-avoid">
               <div 
-                className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_15px_35px_rgba(0,0,0,0.5)] hover:-translate-y-1 duration-300 w-full h-auto"
+                className="group bg-[#1a1b1d] border rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_15px_35px_rgba(0,0,0,0.5)] hover:-translate-y-1 duration-300 w-full h-auto"
                 style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}
               >
                 <div className="w-full h-auto bg-black">
                   <img src={art.imageUrl} className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-500 block" alt={art.titleEn} />
                 </div>
-                {/* 카드 내부 라벨 텍스트 패딩도 컴팩트하게 조율 */}
-                <div className="p-3.5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
-                  <h3 className="font-extrabold text-[#e2c184] truncate text-xs sm:text-sm font-sans tracking-tight">{art.titleEn}</h3>
-                  <p className="text-[#a38752] font-serif italic text-[11px] mt-0.5 truncate">{art.artist}</p>
+                {/* 폰 화면 텍스트가 거대화되지 않게 패딩과 폰트 크기를 기기별 분기 다운스케일 */}
+                <div className="p-2 sm:p-3.5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
+                  <h3 className="font-extrabold text-[#e2c184] truncate text-[11px] sm:text-sm font-sans tracking-tight">{art.titleEn}</h3>
+                  <p className="text-[#a38752] font-serif italic text-[9px] sm:text-[11px] mt-0.5 truncate">{art.artist}</p>
                 </div>
               </div>
             </Link>
