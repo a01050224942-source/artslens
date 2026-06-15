@@ -147,7 +147,7 @@ export default function Home() {
         }}
       ></div>
 
-      {/* SECTION 1: 3D Hero Carousel */}
+      {/* SECTION 1: 3D Hero Carousel (크기 및 레이아웃 100% 유지) */}
       <section className="h-screen w-full flex flex-col justify-between relative p-8 pb-4">
         
         {/* 상단 우측 내비게이션 콘솔 */}
@@ -237,7 +237,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 하단 제어 화살표 */}
+        {/* 하단 제어 화살표 콘솔 */}
         <div className="w-full flex flex-col items-center z-20">
           <div className="flex gap-12 mb-4">
             <button onClick={handlePrev} className="hover:scale-110 active:scale-95 text-xl bg-[#1a1b1d] border border-neutral-700 hover:border-neutral-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all">←</button>
@@ -253,25 +253,27 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 w-full border-t border-[#1a1b1d]"></div>
       </section>
 
-      {/* 하단 전체 컬렉션 메이슨리 구역 */}
-      <section ref={gridRef} className="py-24 px-8 max-w-7xl mx-auto relative z-20">
+      {/* 🎯 [대교정 포인트]: 가은님이 요청하신 단독 75% 스케일 뷰포트 압축 매커니즘 구현 */}
+      {/* 1. 최대 가로 제한을 max-w-5xl(약 1024px)로 대폭 축소하여 양옆으로 과도하게 펴지는 것을 물리적으로 락인 */}
+      {/* 2. 한 줄에 무조건 4개 기둥이 서도록 'sm:columns-2 md:columns-3 lg:columns-4' 구조로 고정 (xl 이상에서도 4개 유지) */}
+      {/* 3. 카드 사이 여백을 gap-6, space-y-6으로 콤팩트하게 다듬어 75% 줌 아웃 느낌 구현 */}
+      <section ref={gridRef} className="py-24 px-8 max-w-5xl mx-auto relative z-20">
         <h2 className="text-3xl font-bold mb-10 border-b border-neutral-800 pb-4 tracking-tight text-neutral-100 font-sans">Collection</h2>
         
-        {/* 🎯 [대교정 포인트]: 다닥다닥 붙어있던 가로 열 간격(gap-8 ➡️ gap-12)과 
-            세로 줄 간격(space-y-8 ➡️ space-y-12)을 한층 대폭 넓혀 갤러리 특유의 시각적 여백 미학 구축 */}
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-12 space-y-12">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
           {artworks.map((art) => (
             <Link href={`/artwork/${art.id}`} key={`grid-${art.id}`} className="block break-inside-avoid">
               <div 
-                className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 duration-300 w-full h-auto"
+                className="group bg-[#1a1b1d] border-2 rounded-none overflow-hidden transition-all shadow-xl hover:shadow-[0_15px_35px_rgba(0,0,0,0.5)] hover:-translate-y-1 duration-300 w-full h-auto"
                 style={{ borderImage: "linear-gradient(to right, #c5a059, #927437) 1" }}
               >
                 <div className="w-full h-auto bg-black">
                   <img src={art.imageUrl} className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-500 block" alt={art.titleEn} />
                 </div>
-                <div className="p-5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
-                  <h3 className="font-extrabold text-[#e2c184] truncate text-base font-sans">{art.titleEn}</h3>
-                  <p className="text-[#a38752] font-serif italic text-xs mt-1 truncate">{art.artist}</p>
+                {/* 카드 내부 라벨 텍스트 패딩도 컴팩트하게 조율 */}
+                <div className="p-3.5 bg-gradient-to-b from-[#241c10] to-[#17120a] border-t border-[#46391e]">
+                  <h3 className="font-extrabold text-[#e2c184] truncate text-xs sm:text-sm font-sans tracking-tight">{art.titleEn}</h3>
+                  <p className="text-[#a38752] font-serif italic text-[11px] mt-0.5 truncate">{art.artist}</p>
                 </div>
               </div>
             </Link>

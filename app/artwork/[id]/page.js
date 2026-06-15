@@ -22,7 +22,7 @@ export default function ArtworkDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
-  // 🎯 [신규 기획]: 도슨트 맞춤 조합 키워드 상태 (다중 선택 가능)
+  // 🎯 도슨트 맞춤 조합 키워드 상태 (다중 선택 가능)
   const [selectedKeywords, setSelectedKeywords] = useState([]);
 
   const keywordOptions = [
@@ -127,7 +127,6 @@ export default function ArtworkDetail() {
     setIsGenerating(true);
 
     try {
-      // API 라우트로 선택된 키워드 조합 리스트를 함께 전송
       const response = await fetch("/api/docent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,7 +136,7 @@ export default function ArtworkDetail() {
           artist: art.artist || "Unknown Artist",
           year: art.year || "Unknown",
           style: art.style || "European Paintings",
-          selectedKeywords: selectedKeywords // Gemini 프롬프트 조립용 데이터
+          selectedKeywords: selectedKeywords 
         }),
       });
 
@@ -228,15 +227,12 @@ export default function ArtworkDetail() {
   if (!art) return <div className="min-h-screen bg-[#242629] flex items-center justify-center text-white">작품을 찾을 수 없습니다.</div>;
 
   const isDefaultStory = !art.docentStory || art.docentStory === "현재 AI 도슨트가 이 작품을 분석 중입니다...";
-  
-  // 로그인한 유저의 이름을 닉네임 형태로 파싱
   const userName = user ? user.email?.split("@")[0] : "";
 
   return (
     <main className="min-h-screen bg-[#242629] text-white p-6 sm:p-12 relative flex flex-col items-center justify-start overflow-x-hidden">
       
-      {/* 🎯 [수정 포인트 1]: '갤러리로 돌아가기' 버튼 위치 오류 완벽 차단 */}
-      {/* 메인 Flex 구역과 완전히 별개의 Row 영역으로 격리하여 최상단 왼쪽에 항상 정착 */}
+      {/* 뒤로가기 버튼 */}
       <div className="w-full max-w-6xl flex justify-start mb-8 border-b border-neutral-800 pb-4">
         <button 
           onClick={() => router.push("/")} 
@@ -251,7 +247,10 @@ export default function ArtworkDetail() {
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-12 relative">
         
         {/* 🖼️ 왼쪽: 와이드 스포트라이트 명화 구역 */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-2 relative sticky top-8">
+        {/* max-w-[480px] 등으로 적정 크기 캡슐화를 주어 세로로 너무 거대해지는 것을 방지 */}
+        <div className="w-full lg:w-1/2 max-w-[480px] mx-auto lg:mx-0 flex flex-col items-center justify-center p-2 relative sticky top-8">
+          
+          {/* 광폭 원뿔형 스포트라이트 */}
           <div 
             className="absolute pointer-events-none z-10 opacity-95"
             style={{
@@ -265,18 +264,21 @@ export default function ArtworkDetail() {
             }}
           ></div>
 
+          {/* 🎯 [대개편 핵심 패치]: 고정 높이 틀을 완전히 파괴하고 h-fit으로 가변 대응 */}
           <div 
-            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 w-full"
+            className="bg-[#1a1b1d] rounded-none overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 relative z-20 w-full h-fit"
             style={{
               borderImage: "linear-gradient(to bottom right, #dfba73 0%, #cfa862 25%, #927437 50%, #c5a059 75%, #f5dfa3 100%) 14",
               borderWidth: "14px",
               borderStyle: "solid",
             }}
           >
+            {/* 🎯 강제 세로 크롭인 max-h와 object-cover를 완전히 빼버림 */}
+            {/* w-full h-auto block object-contain 조합으로 이미지가 잘리지 않고, 액자가 이미지 크기에 기가 막히게 밀착함 */}
             <img 
               src={art.imageUrl || art.image} 
               alt={art.titleEn || art.title} 
-              className="max-h-[580px] w-full object-contain bg-black"
+              className="w-full h-auto block object-contain"
               draggable="false"
             />
           </div>
@@ -315,14 +317,14 @@ export default function ArtworkDetail() {
               </h2>
             )}
             
-            <p className="text-md text-[#554e40] mb-6 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
+            <p className="text-md text-[#554e40] mb-8 border-b border-[#e5dfcc] pb-5 font-medium font-serif italic">
               {art.artist || "Unknown Artist"}, <span className="text-neutral-500 font-sans not-italic font-bold">{art.year}</span>
             </p>
 
-            {/* 🎯 [수정 포인트 3]: 다중 선택 가능한 메인 키워드 조합 인터페이스 칩 배치 구역 */}
+            {/* 다중 선택 가능한 메인 키워드 조합 인터페이스 칩 배치 구역 */}
             <div className="mb-6 bg-[#fcfbfa] p-4 rounded-md border border-[#eadabe] shadow-sm">
               <h4 className="text-xs font-black text-[#665e4e] mb-3 flex items-center gap-1 tracking-wide">
-                <span>🧩</span> 원하는 해설 관점 선택
+                <span>🧩</span> 원하는 해설 관점 조합하기
               </h4>
               <div className="flex flex-wrap gap-2">
                 {keywordOptions.map((keyword) => {
@@ -344,7 +346,7 @@ export default function ArtworkDetail() {
               </div>
               {selectedKeywords.length > 0 && (
                 <p className="text-[11px] text-[#8a6d3b] mt-3 font-medium">
-                  💡 선택된 관점: {selectedKeywords.join(", ")}에 집중하여 고유 가이드를 편찬합니다.
+                  💡 선택된 관점: {selectedKeywords.join(", ")}에 집중하여 고유 가이드를 작성합니다.
                 </p>
               )}
             </div>
@@ -361,7 +363,7 @@ export default function ArtworkDetail() {
             </div>
           </div>
 
-          {/* 하단 유동식 동적 제어 콘솔 시스템 */}보관함
+          {/* 하단 유동식 동적 제어 콘솔 시스템 */}
           <div className="mt-8">
             {isDefaultStory ? (
               <button 
@@ -369,7 +371,6 @@ export default function ArtworkDetail() {
                 disabled={isGenerating}
                 className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-[#2a2b2d] to-[#151617] hover:from-[#87672a] hover:to-[#6b501f] text-white rounded-md font-extrabold text-xs tracking-wider shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-40 cursor-pointer uppercase"
               >
-                {/* 🎯 [수정 포인트 2]: 로그인 여부에 따라 완전히 다르게 반응하는 텍스트 바인딩 */}
                 {isGenerating 
                   ? "✨ 제미나이가 엄선된 키워드를 융합 해설 중..." 
                   : user 
@@ -378,8 +379,6 @@ export default function ArtworkDetail() {
               </button>
             ) : (
               <div className="flex flex-col gap-2">
-                
-                {/* 💡 기생성된 도슨트가 있을 때도 키워드를 바꿔서 재작성하고 싶을 때를 대비한 리빌딩 버튼 링크 제공 */}
                 <button
                   onClick={handleGenerateDocent}
                   disabled={isGenerating}
